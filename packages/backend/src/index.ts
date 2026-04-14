@@ -13,6 +13,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRouter from './routes/api.js';
 import { logger } from './services/logger.js';
+import { providerRegistry } from './services/providers/registry.js';
+import { ZhipuProvider } from './services/providers/zhipu.js';
+import { GitHubProvider } from './services/providers/github.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,6 +24,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ============================================================
 
 const PORT: number = parseInt(process.env.PORT || '3001', 10);
+
+// ============================================================
+// 注册 AI 提供商
+// ============================================================
+
+providerRegistry.register(new ZhipuProvider());
+if (process.env.GITHUB_TOKEN) {
+  providerRegistry.register(new GitHubProvider());
+}
 
 // 注意：速率限制已移至 routes/api.ts 中，按模型动态配置
 

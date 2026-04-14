@@ -30,8 +30,11 @@
           </div>
           <div class="model-selector">
             <label class="model-label">模型:</label>
+            <select v-model="selectedProvider" class="model-select provider-select">
+              <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
             <select v-model="selectedModel" class="model-select">
-              <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }}</option>
+              <option v-for="m in currentModels" :key="m.id" :value="m.id">{{ m.name }}</option>
             </select>
           </div>
         </div>
@@ -135,7 +138,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useBridge } from './composables/useBridge'
 import type { Hand, BidItem } from './composables/useBridge'
 import { analyzeHand as apiAnalyzeHand, analyzeBidding as apiAnalyzeBidding, suggestBid as apiSuggestBid, getModels } from './api/bridge'
-import type { ModelInfo } from './api/bridge'
+import type { ProviderInfo } from './api/bridge'
 
 import SystemSelector from './components/SystemSelector.vue'
 import HandInput from './components/HandInput.vue'
@@ -153,14 +156,30 @@ const ewSystem = ref<string>('natural')
 const activeTab = ref<string>('hand')
 const dealer = ref<string>('N')
 
-const selectedModel = ref<string>('GLM-4-Flash')
-const models = ref<ModelInfo[]>([])
+const selectedProvider = ref<string>('zhipu')
+const selectedModel = ref<string>('GLM-4.7-Flash')
+const providers = ref<ProviderInfo[]>([])
+
+const currentModels = computed(() => {
+  const p = providers.value.find(p => p.id === selectedProvider.value)
+  return p ? p.models : []
+})
+
+// 当 provider 变化时，自动选中该 provider 的第一个模型
+watch(selectedProvider, () => {
+  if (currentModels.value.length > 0) {
+    selectedModel.value = currentModels.value[0].id
+  }
+})
 
 onMounted(async () => {
   try {
-    models.value = await getModels()
-    if (models.value.length > 0) {
-      selectedModel.value = models.value[0].id
+    providers.value = await getModels()
+    if (providers.value.length > 0) {
+      selectedProvider.value = providers.value[0].id
+      if (providers.value[0].models.length > 0) {
+        selectedModel.value = providers.value[0].models[0].id
+      }
     }
   } catch (e) {
     console.error('获取模型列表失败', e)
@@ -207,7 +226,7 @@ const doAnalyzeHand = async () => {
   isAnalyzing.value = true
   handAnalysisResult.value = ''
   try {
-    handAnalysisResult.value = await apiAnalyzeHand({ hand: hand.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
+    handAnalysisResult.value = await apiAnalyzeHand({ hand: hand.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: `${selectedProvider.value}:${selectedModel.value}` })
   } catch (error: unknown) {
     handAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -219,7 +238,7 @@ const doAnalyzeBidding = async () => {
   isAnalyzing.value = true
   biddingAnalysisResult.value = ''
   try {
-    biddingAnalysisResult.value = await apiAnalyzeBidding({ sequence: biddingSequence.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
+    biddingAnalysisResult.value = await apiAnalyzeBidding({ sequence: biddingSequence.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: `${selectedProvider.value}:${selectedModel.value}` })
   } catch (error: unknown) {
     biddingAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -231,7 +250,7 @@ const doSuggestBid = async () => {
   isAnalyzing.value = true
   suggestResult.value = ''
   try {
-    suggestResult.value = await apiSuggestBid({ hand: suggestHand.value, sequence: suggestBiddingSequence.value, position: suggestNextPlayer.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
+    suggestResult.value = await apiSuggestBid({ hand: suggestHand.value, sequence: suggestBiddingSequence.value, position: suggestNextPlayer.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: `${selectedProvider.value}:${selectedModel.value}` })
   } catch (error: unknown) {
     suggestResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -362,6 +381,10 @@ const copyResult = (text: string) => {
 
 .model-select:hover { border-color: #3d7a4d; }
 .model-select option { background: #1a472a; color: #fff; }
+
+.provider-select {
+  min-width: 90px;
+}
 
 .header-bottom {
   display: flex;

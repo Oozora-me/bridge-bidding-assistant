@@ -15,6 +15,12 @@ export interface ModelInfo {
   defaultRateLimit: number
 }
 
+export interface ProviderInfo {
+  id: string
+  name: string
+  models: ModelInfo[]
+}
+
 interface AnalyzeHandParams {
   hand: Hand
   nsSystem: string
@@ -61,7 +67,7 @@ async function request(endpoint: string, data: Record<string, unknown>): Promise
 /**
  * 获取可用模型列表
  */
-export async function getModels(): Promise<ModelInfo[]> {
+export async function getModels(): Promise<ProviderInfo[]> {
   const response = await fetch(`${BASE_URL}/models`)
 
   if (!response.ok) {
