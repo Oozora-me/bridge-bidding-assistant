@@ -1,7 +1,37 @@
-// server/config/bidding.js
+// packages/backend/src/config/bidding.ts
 // 叫牌体系配置 - 所有规则均可通过配置文件修改
 
-export const HCP_RULES_TEXT = `【点力计算标准 - 哈伦点力（HCP）】
+// ============================================================
+// 类型定义
+// ============================================================
+
+interface BiddingRule {
+  hcpRange?: [number, number];
+  shape?: string;
+  description?: string;
+  enabled?: boolean;
+  hcpMin?: number;
+  hcpMax?: number;
+}
+
+interface Convention {
+  enabled: boolean;
+  description: string;
+  trigger: string;
+}
+
+interface SystemConfig {
+  name: string;
+  opening: Record<string, BiddingRule>;
+  response: Record<string, BiddingRule>;
+  conventions: Record<string, Convention>;
+}
+
+// ============================================================
+// 常量
+// ============================================================
+
+export const HCP_RULES_TEXT: string = `【点力计算标准 - 哈伦点力（HCP）】
 - A = 4点，K = 3点，Q = 2点，J = 1点
 - 每门花色最多计 10 点（A+K+Q+J）
 
@@ -14,7 +44,7 @@ export const HCP_RULES_TEXT = `【点力计算标准 - 哈伦点力（HCP）】
 - 12 HCP 以上可以开叫（第三手位置可适当降低到 11 HCP）
 - 不足 12 HCP 通常 Pass，除非有好的牌型和争叫条件`;
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: Record<string, SystemConfig> = {
   'natural-2over1': {
     name: '自然二盖一体系 (2/1 GF)',
     // 开叫规则
@@ -76,34 +106,38 @@ const DEFAULT_CONFIG = {
   }
 };
 
-export function getSystemConfig(systemId) {
+// ============================================================
+// 导出函数
+// ============================================================
+
+export function getSystemConfig(systemId: string): SystemConfig {
   return DEFAULT_CONFIG[systemId] || DEFAULT_CONFIG['natural-2over1'];
 }
 
-export function getEnabledConventions(systemId) {
-  const config = getSystemConfig(systemId);
-  const conventions = config.conventions || {};
+export function getEnabledConventions(systemId: string): Array<{ name: string; enabled: boolean; description: string; trigger: string }> {
+  const config: SystemConfig = getSystemConfig(systemId);
+  const conventions: Record<string, Convention> = config.conventions || {};
   return Object.entries(conventions)
     .filter(([, c]) => c.enabled)
     .map(([name, c]) => ({ name, ...c }));
 }
 
-export function getSystemRulesText(systemId) {
-  const config = getSystemConfig(systemId);
-  let text = `${HCP_RULES_TEXT}\n\n【${config.name} - 当前生效规则】\n`;
+export function getSystemRulesText(systemId: string): string {
+  const config: SystemConfig = getSystemConfig(systemId);
+  let text: string = `${HCP_RULES_TEXT}\n\n【${config.name} - 当前生效规则】\n`;
 
   // 开叫规则
   text += '\n**开叫规则：**\n';
   for (const [bid, rule] of Object.entries(config.opening)) {
-    const hcp = rule.hcpRange ? `${rule.hcpRange[0]}-${rule.hcpRange[1]} HCP` : '';
-    const shape = rule.shape ? `，${rule.shape}` : '';
-    const extra = rule.enabled === false ? '（已禁用）' : '';
-    const fiveCardRule = rule.description?.includes('5张高花') ? rule.description : '';
+    const hcp: string = rule.hcpRange ? `${rule.hcpRange[0]}-${rule.hcpRange[1]} HCP` : '';
+    const shape: string = rule.shape ? `，${rule.shape}` : '';
+    const extra: string = rule.enabled === false ? '（已禁用）' : '';
+    const fiveCardRule: string = rule.description?.includes('5张高花') ? rule.description : '';
     text += `- ${bid}: ${hcp}${shape}${extra}\n`;
   }
 
   // 5张高花优先规则
-  const nt5card = config.opening['1NT_5cardMajor'];
+  const nt5card: BiddingRule | undefined = config.opening['1NT_5cardMajor'];
   if (nt5card && nt5card.enabled) {
     text += `- **重要约束**：如果有5张高花（♠或♥），则优先开叫该高花（1♠或1♥），即使牌力在1NT范围内（15-17 HCP）\n`;
   }

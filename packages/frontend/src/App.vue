@@ -53,7 +53,7 @@
           <HandInput v-model="hand" />
           <div class="analyze-actions">
             <button
-              class="btn btn-primary"
+              class="btn btn-primary btn-large"
               @click="doAnalyzeHand"
               :disabled="isAnalyzing || !hasAnyCard"
             >
@@ -75,7 +75,7 @@
           />
           <div class="analyze-actions">
             <button
-              class="btn btn-primary"
+              class="btn btn-primary btn-large"
               @click="doAnalyzeBidding"
               :disabled="isAnalyzing || biddingSequence.length === 0"
             >
@@ -86,6 +86,10 @@
 
         <!-- 叫牌建议 -->
         <div v-show="activeTab === 'suggest'" class="tab-pane">
+          <div class="position-hint">
+            🎯 你的方位：<strong>{{ suggestNextPlayer }}</strong>
+            （{{ playerFullNames[suggestNextPlayer] }}）
+          </div>
           <HandInput v-model="suggestHand" />
           <BiddingSequence
             v-model="suggestBiddingSequence"
@@ -98,7 +102,7 @@
           />
           <div class="analyze-actions">
             <button
-              class="btn btn-primary"
+              class="btn btn-primary btn-large"
               @click="doSuggestBid"
               :disabled="isAnalyzing || !hasAnySuggestCard"
             >
@@ -120,9 +124,10 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useBridge } from './composables/useBridge'
+import type { Hand, BidItem } from './composables/useBridge'
 import { analyzeHand as apiAnalyzeHand, analyzeBidding as apiAnalyzeBidding, suggestBid as apiSuggestBid } from './api/bridge'
 
 import SystemSelector from './components/SystemSelector.vue'
@@ -133,21 +138,23 @@ import AnalysisResult from './components/AnalysisResult.vue'
 
 const { getNextPlayer, getDisabledBids } = useBridge()
 
+const playerFullNames: Record<string, string> = { N: '北', E: '东', S: '南', W: '西' }
+
 // 状态
-const nsSystem = ref('natural')
-const ewSystem = ref('natural')
-const activeTab = ref('hand')
-const dealer = ref('N')
+const nsSystem = ref<string>('natural')
+const ewSystem = ref<string>('natural')
+const activeTab = ref<string>('hand')
+const dealer = ref<string>('N')
 
-const hand = ref({ spades: '', hearts: '', diamonds: '', clubs: '' })
-const biddingSequence = ref([])
-const suggestHand = ref({ spades: '', hearts: '', diamonds: '', clubs: '' })
-const suggestBiddingSequence = ref([])
+const hand = ref<Hand>({ spades: '', hearts: '', diamonds: '', clubs: '' })
+const biddingSequence = ref<BidItem[]>([])
+const suggestHand = ref<Hand>({ spades: '', hearts: '', diamonds: '', clubs: '' })
+const suggestBiddingSequence = ref<BidItem[]>([])
 
-const isAnalyzing = ref(false)
-const handAnalysisResult = ref('')
-const biddingAnalysisResult = ref('')
-const suggestResult = ref('')
+const isAnalyzing = ref<boolean>(false)
+const handAnalysisResult = ref<string>('')
+const biddingAnalysisResult = ref<string>('')
+const suggestResult = ref<string>('')
 
 const tabs = [
   { id: 'hand', name: '牌型分析' },
@@ -160,28 +167,28 @@ watch(dealer, () => {
   suggestBiddingSequence.value = []
 })
 
-const currentResult = computed(() => {
+const currentResult = computed<string>(() => {
   if (activeTab.value === 'hand') return handAnalysisResult.value
   if (activeTab.value === 'bidding') return biddingAnalysisResult.value
   if (activeTab.value === 'suggest') return suggestResult.value
   return ''
 })
 
-const hasAnyCard = computed(() => !!(hand.value.spades || hand.value.hearts || hand.value.diamonds || hand.value.clubs))
-const hasAnySuggestCard = computed(() => !!(suggestHand.value.spades || suggestHand.value.hearts || suggestHand.value.diamonds || suggestHand.value.clubs))
+const hasAnyCard = computed<boolean>(() => !!(hand.value.spades || hand.value.hearts || hand.value.diamonds || hand.value.clubs))
+const hasAnySuggestCard = computed<boolean>(() => !!(suggestHand.value.spades || suggestHand.value.hearts || suggestHand.value.diamonds || suggestHand.value.clubs))
 
-const nextPlayer = computed(() => getNextPlayer(biddingSequence.value, dealer.value))
-const disabledBidsSet = computed(() => getDisabledBids(biddingSequence.value))
-const suggestNextPlayer = computed(() => getNextPlayer(suggestBiddingSequence.value, dealer.value))
-const suggestDisabledBidsSet = computed(() => getDisabledBids(suggestBiddingSequence.value))
+const nextPlayer = computed<string>(() => getNextPlayer(biddingSequence.value, dealer.value))
+const disabledBidsSet = computed<Set<string>>(() => getDisabledBids(biddingSequence.value))
+const suggestNextPlayer = computed<string>(() => getNextPlayer(suggestBiddingSequence.value, dealer.value))
+const suggestDisabledBidsSet = computed<Set<string>>(() => getDisabledBids(suggestBiddingSequence.value))
 
 const doAnalyzeHand = async () => {
   isAnalyzing.value = true
   handAnalysisResult.value = ''
   try {
     handAnalysisResult.value = await apiAnalyzeHand({ hand: hand.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
-  } catch (error) {
-    handAnalysisResult.value = `分析失败：${error.message}`
+  } catch (error: unknown) {
+    handAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
     isAnalyzing.value = false
   }
@@ -192,8 +199,8 @@ const doAnalyzeBidding = async () => {
   biddingAnalysisResult.value = ''
   try {
     biddingAnalysisResult.value = await apiAnalyzeBidding({ sequence: biddingSequence.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
-  } catch (error) {
-    biddingAnalysisResult.value = `分析失败：${error.message}`
+  } catch (error: unknown) {
+    biddingAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
     isAnalyzing.value = false
   }
@@ -204,14 +211,14 @@ const doSuggestBid = async () => {
   suggestResult.value = ''
   try {
     suggestResult.value = await apiSuggestBid({ hand: suggestHand.value, sequence: suggestBiddingSequence.value, position: suggestNextPlayer.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
-  } catch (error) {
-    suggestResult.value = `分析失败：${error.message}`
+  } catch (error: unknown) {
+    suggestResult.value = `分析失败：${(error as Error).message}`
   } finally {
     isAnalyzing.value = false
   }
 }
 
-const copyResult = (text) => {
+const copyResult = (text: string) => {
   navigator.clipboard.writeText(text).catch(() => {
     const textarea = document.createElement('textarea')
     textarea.value = text
@@ -389,6 +396,30 @@ const copyResult = (text) => {
 }
 
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 加大分析按钮 */
+.btn-large {
+  padding: 0.6rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 6px;
+}
+
+/* 叫牌建议 - 方位提示 */
+.position-hint {
+  background: rgba(74, 144, 217, 0.15);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  color: #a8d5a8;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.position-hint strong {
+  color: #4a90d9;
+  font-size: 1rem;
+}
 
 @media (max-width: 768px) {
   .app-main { flex-direction: column; overflow-y: auto; }

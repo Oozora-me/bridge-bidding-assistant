@@ -1,6 +1,16 @@
 <template>
   <div class="hand-input">
-    <h3 class="hand-input-title">输入手牌</h3>
+    <div class="hand-input-header">
+      <h3 class="hand-input-title">输入手牌</h3>
+      <div class="header-actions">
+        <button class="btn-small" @click="randomDeal">
+          随机发牌
+        </button>
+        <button class="btn-small" @click="clearHand">
+          清空
+        </button>
+      </div>
+    </div>
 
     <div class="hand-input-grid">
       <!-- 黑桃 -->
@@ -69,54 +79,34 @@
       {{ errorMessage }}
     </div>
 
-    <!-- 统计信息 -->
-    <div class="hand-stats">
-      <div class="stat-item">
-        <span class="stat-label">HCP（高牌点力）</span>
-        <span class="stat-value hcp">{{ hcp }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">牌型分布</span>
-        <span class="stat-value distribution">{{ distribution }}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">总张数</span>
-        <span class="stat-value" :class="{ 'card-count-error': totalCards !== 13 && totalCards > 0 }">
-          {{ totalCards }}
-        </span>
-      </div>
-    </div>
-
-    <!-- 操作按钮 -->
-    <div class="hand-actions">
-      <button class="btn btn-secondary" @click="randomDeal">
-        随机发牌
-      </button>
-      <button class="btn btn-secondary" @click="clearHand">
-        清空
-      </button>
+    <!-- 统计信息 - 单行紧凑显示 -->
+    <div class="hand-stats-inline">
+      <span class="stat-chip hcp">HCP: <strong>{{ hcp }}</strong></span>
+      <span class="stat-separator">|</span>
+      <span class="stat-chip distribution">{{ distribution }}</span>
+      <span class="stat-separator">|</span>
+      <span class="stat-chip" :class="{ 'card-count-error': totalCards !== 13 && totalCards > 0 }">{{ totalCards }}张</span>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
 import { useBridge } from '../composables/useBridge'
+import type { Hand } from '../composables/useBridge'
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-    default: () => ({ spades: '', hearts: '', diamonds: '', clubs: '' })
-  }
-})
+const props = defineProps<{
+  modelValue: Hand
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  'update:modelValue': [value: Hand]
+}>()
 
 const { calculateHCP, calculateDistribution, validateHand, dealRandomHand, RANKS } = useBridge()
 
 // 本地手牌状态
-const localHand = reactive({
+const localHand = reactive<Hand>({
   spades: props.modelValue.spades || '',
   hearts: props.modelValue.hearts || '',
   diamonds: props.modelValue.diamonds || '',
@@ -124,7 +114,7 @@ const localHand = reactive({
 })
 
 // 错误状态
-const errors = reactive({
+const errors = reactive<Record<string, boolean>>({
   spades: false,
   hearts: false,
   diamonds: false,
@@ -140,19 +130,19 @@ watch(() => props.modelValue, (newVal) => {
 }, { deep: true })
 
 // 计算 HCP
-const hcp = computed(() => {
+const hcp = computed<number>(() => {
   return calculateHCP(localHand)
 })
 
 // 计算牌型分布
-const distribution = computed(() => {
+const distribution = computed<string>(() => {
   const total = totalCards.value
   if (total === 0) return '-'
   return calculateDistribution(localHand)
 })
 
 // 计算总张数
-const totalCards = computed(() => {
+const totalCards = computed<number>(() => {
   return (
     (localHand.spades || '').length +
     (localHand.hearts || '').length +
@@ -162,20 +152,20 @@ const totalCards = computed(() => {
 })
 
 // 错误信息
-const errorMessage = computed(() => {
+const errorMessage = computed<string>(() => {
   const validation = validateHand(localHand)
   return validation.valid ? '' : validation.message
 })
 
 // 输入处理
-function onInput(suit) {
+function onInput(suit: keyof Hand) {
   // 转为大写
   localHand[suit] = localHand[suit].toUpperCase()
 
   // 验证输入
   const validRanks = new Set(RANKS)
   let filtered = ''
-  const seen = new Set()
+  const seen = new Set<string>()
   let hasError = false
 
   for (const card of localHand[suit]) {
@@ -226,32 +216,60 @@ function clearHand() {
 .hand-input {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #2d5a3d;
+}
+
+.hand-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .hand-input-title {
   color: #fff;
-  margin: 0 0 1rem;
-  font-size: 1.2rem;
-  text-align: center;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.btn-small {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #2d5a3d;
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: #a8d5a8;
+  transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: #3d7a4d;
 }
 
 .hand-input-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.4rem;
 }
 
 .suit-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .suit-label {
-  font-size: 1.5rem;
-  width: 2rem;
+  font-size: 1.2rem;
+  width: 1.5rem;
   text-align: center;
   flex-shrink: 0;
 }
@@ -274,12 +292,12 @@ function clearHand() {
 
 .card-input {
   flex: 1;
-  padding: 0.6rem 1rem;
+  padding: 0.35rem 0.6rem;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid #2d5a3d;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-family: 'Courier New', monospace;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -299,100 +317,61 @@ function clearHand() {
 .card-input::placeholder {
   color: rgba(255, 255, 255, 0.3);
   letter-spacing: 1px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .card-count {
   color: #a8d5a8;
-  font-size: 0.9rem;
-  width: 2rem;
+  font-size: 0.8rem;
+  width: 1.5rem;
   text-align: center;
   flex-shrink: 0;
 }
 
 .error-message {
   color: #e74c3c;
-  font-size: 0.9rem;
-  margin-top: 0.75rem;
-  padding: 0.5rem;
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+  padding: 0.3rem;
   background: rgba(231, 76, 60, 0.1);
-  border-radius: 6px;
+  border-radius: 4px;
   text-align: center;
 }
 
-.hand-stats {
+/* 单行紧凑统计信息 */
+.hand-stats-inline {
   display: flex;
-  justify-content: space-around;
-  margin-top: 1.25rem;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-}
-
-.stat-label {
-  color: #a8d5a8;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
   font-size: 0.8rem;
+  color: #a8d5a8;
 }
 
-.stat-value {
-  color: #fff;
-  font-size: 1.2rem;
-  font-weight: bold;
+.stat-chip {
+  white-space: nowrap;
 }
 
-.stat-value.hcp {
+.stat-chip.hcp strong {
   color: #f1c40f;
-  font-size: 1.5rem;
+  font-size: 0.9rem;
 }
 
-.stat-value.distribution {
+.stat-chip.distribution {
   color: #4a90d9;
   font-family: 'Courier New', monospace;
 }
 
+.stat-separator {
+  color: rgba(168, 213, 168, 0.3);
+  font-size: 0.7rem;
+}
+
 .card-count-error {
   color: #e74c3c !important;
-}
-
-.hand-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  justify-content: center;
-}
-
-.btn {
-  padding: 0.5rem 1.25rem;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid #2d5a3d;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #3d7a4d;
-}
-
-@media (max-width: 480px) {
-  .hand-stats {
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
 }
 </style>

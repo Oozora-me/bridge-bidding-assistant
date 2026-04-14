@@ -61,58 +61,50 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useBridge } from '../composables/useBridge'
+import type { BidItem } from '../composables/useBridge'
 
-const props = defineProps({
-  modelValue: {
-    type: Array,
-    required: true,
-    default: () => []
-  },
-  currentPlayer: {
-    type: String,
-    default: 'N'
-  },
-  disabledBids: {
-    type: Set,
-    default: () => new Set()
-  }
-})
+const props = defineProps<{
+  modelValue: BidItem[]
+  currentPlayer: string
+  disabledBids: Set<string>
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  'update:modelValue': [value: BidItem[]]
+}>()
 
 const {
   BID_LEVELS: bidLevels,
   BID_STRAINS: bidStrains,
   SUIT_SYMBOLS: suitSymbols,
-  SUIT_COLORS: suitColors,
   bidToValue
 } = useBridge()
 
 // 当前选中的级别
-const selectedLevel = ref(1)
+const selectedLevel = ref<number>(1)
 
 // 获取花色符号
-function strainSymbol(strain) {
+function strainSymbol(strain: string): string {
   if (strain === 'NT') return 'NT'
   return suitSymbols[strain] || strain
 }
 
 // 获取花色 CSS 类名
-function strainClass(strain) {
-  const map = { C: 'clubs', D: 'diamonds', H: 'hearts', S: 'spades', NT: 'no-trump' }
+function strainClass(strain: string): string {
+  const map: Record<string, string> = { C: 'clubs', D: 'diamonds', H: 'hearts', S: 'spades', NT: 'no-trump' }
   return map[strain] || ''
 }
 
 // 判断叫品是否被禁用
-function isBidDisabled(bid) {
+function isBidDisabled(bid: string): boolean {
   return props.disabledBids.has(bid)
 }
 
 // 是否可以加倍
-const canDouble = computed(() => {
+const canDouble = computed<boolean>(() => {
   const sequence = props.modelValue
   if (sequence.length === 0) return false
 
@@ -132,7 +124,7 @@ const canDouble = computed(() => {
 })
 
 // 是否可以再加倍
-const canRedouble = computed(() => {
+const canRedouble = computed<boolean>(() => {
   const sequence = props.modelValue
   if (sequence.length === 0) return false
 
@@ -145,7 +137,7 @@ const canRedouble = computed(() => {
 })
 
 // 放置叫品
-function placeBid(bid) {
+function placeBid(bid: string) {
   const newSequence = [...props.modelValue, {
     player: props.currentPlayer,
     bid: bid

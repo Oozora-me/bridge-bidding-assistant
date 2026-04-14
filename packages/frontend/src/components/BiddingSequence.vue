@@ -48,16 +48,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useBridge } from '../composables/useBridge'
+import type { BidItem } from '../composables/useBridge'
 
-const props = defineProps({
-  modelValue: { type: Array, required: true, default: () => [] },
-  currentPlayer: { type: String, default: 'N' }
-})
+const props = defineProps<{
+  modelValue: BidItem[]
+  currentPlayer: string
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  'update:modelValue': [value: BidItem[]]
+}>()
 
 const {
   PLAYERS: players,
@@ -67,12 +70,12 @@ const {
   BID_REDOUBLE
 } = useBridge()
 
-const tableRows = computed(() => {
-  const rows = []
+const tableRows = computed<(string | null)[][]>(() => {
+  const rows: (string | null)[][] = []
   const seq = props.modelValue
   if (seq.length === 0) return rows
 
-  let currentRow = new Array(4).fill(null)
+  let currentRow: (string | null)[] = new Array(4).fill(null)
   for (const item of seq) {
     const playerIndex = players.indexOf(item.player)
     currentRow[playerIndex] = item.bid
@@ -85,7 +88,7 @@ const tableRows = computed(() => {
   return rows
 })
 
-function formatBid(bid) {
+function formatBid(bid: string): string {
   if (!bid) return ''
   if (bid === BID_PASS) return 'Pass'
   if (bid === BID_DOUBLE) return 'X'
@@ -93,7 +96,7 @@ function formatBid(bid) {
   return bid.replace(/S/g, '♠').replace(/H/g, '♥').replace(/D/g, '♦').replace(/C/g, '♣').replace(/NT/g, 'NT')
 }
 
-function cellClass(bid) {
+function cellClass(bid: string | null): string {
   if (!bid) return ''
   if (bid === BID_PASS) return 'pass'
   if (bid === BID_DOUBLE) return 'double'

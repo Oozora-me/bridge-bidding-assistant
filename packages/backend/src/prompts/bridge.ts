@@ -12,26 +12,29 @@ import { getSystemRulesText, getEnabledConventions, HCP_RULES_TEXT } from '../co
 // 通用系统提示词
 // ============================================================
 
-const BASE_SYSTEM_PROMPT = `你是一位世界级桥牌专家和叫牌教练。
+const BASE_SYSTEM_PROMPT: string = `你是一位世界级桥牌专家和叫牌教练。
 
 ${HCP_RULES_TEXT}
 
 【回答格式要求 - 必须严格遵守】
-1. **结论先行**：第一句话直接给出结论或建议（1-2句话），不要铺垫
-2. HCP 和牌型分析**简洁带过**即可（一句话总结，如"14 HCP，5-4-3-1型"），不要展开逐花色计算
-3. 重点放在**叫牌逻辑、建议理由、后续规划**上
-4. 使用 Markdown 格式，但保持紧凑，避免过多空行
-5. 如有多个选择，用简洁的对比说明`;
+1. **结论先行**：第一句话直接给出结论或建议，不要铺垫
+2. HCP 和牌型用一句话带过（如"14 HCP，5-4-3-1型"），不要逐花色展开
+3. 按以下维度结构化输出，每个维度用 emoji 标题 + 1-3 句话，总长度控制在 200 字以内：
+   - 📌 **结论**：你的建议（1句话）
+   - 🃏 **牌力**：HCP + 牌型一句话总结
+   - 💡 **理由**：为什么这样建议（1-2句话）
+   - 📋 **后续**：搭档应叫后你的计划（1-2句话）
+4. 不要输出多余内容，不要重复信息`;
 
 // ============================================================
 // 提示词生成函数
 // ============================================================
 
-export function analyzeHandPrompt(hand, system = 'natural-2over1') {
-  const rulesText = getSystemRulesText(system);
+export function analyzeHandPrompt(hand: Record<string, string>, system: string = 'natural-2over1'): { system: string; user: string } {
+  const rulesText: string = getSystemRulesText(system);
   const conventions = getEnabledConventions(system);
 
-  let conventionsText = '';
+  let conventionsText: string = '';
   if (conventions.length > 0) {
     conventionsText = '\n【当前启用的约定叫】\n';
     for (const c of conventions) {
@@ -39,7 +42,7 @@ export function analyzeHandPrompt(hand, system = 'natural-2over1') {
     }
   }
 
-  const userPrompt = `请先给出开叫建议（一句话），然后简要说明理由和后续规划。HCP 和牌型用一句话总结即可。
+  const userPrompt: string = `请先给出开叫建议（一句话），然后简要说明理由和后续规划。HCP 和牌型用一句话总结即可。
 
 【手牌信息】
 - 位置：${hand.position || '未知'}
@@ -55,13 +58,13 @@ export function analyzeHandPrompt(hand, system = 'natural-2over1') {
   };
 }
 
-export function analyzeBiddingPrompt(params, nsSystem = 'natural-2over1', ewSystem = 'natural-2over1') {
-  const nsRulesText = getSystemRulesText(nsSystem);
-  const ewRulesText = getSystemRulesText(ewSystem);
+export function analyzeBiddingPrompt(params: any, nsSystem: string = 'natural-2over1', ewSystem: string = 'natural-2over1'): { system: string; user: string } {
+  const nsRulesText: string = getSystemRulesText(nsSystem);
+  const ewRulesText: string = getSystemRulesText(ewSystem);
   const nsConventions = getEnabledConventions(nsSystem);
   const ewConventions = getEnabledConventions(ewSystem);
 
-  let conventionsText = '';
+  let conventionsText: string = '';
   if (nsConventions.length > 0) {
     conventionsText += '\n【NS 方当前启用的约定叫】\n';
     for (const c of nsConventions) {
@@ -77,21 +80,21 @@ export function analyzeBiddingPrompt(params, nsSystem = 'natural-2over1', ewSyst
 
   const { biddingSequence, vulnerability, dealer } = params;
 
-  let sequenceStr = '';
+  let sequenceStr: string = '';
   if (biddingSequence && biddingSequence.length > 0) {
-    const positions = ['N', 'E', 'S', 'W'];
-    let dealerIdx = positions.indexOf(dealer) !== -1 ? positions.indexOf(dealer) : 0;
+    const positions: string[] = ['N', 'E', 'S', 'W'];
+    let dealerIdx: number = positions.indexOf(dealer) !== -1 ? positions.indexOf(dealer) : 0;
 
     sequenceStr = '```\n';
     sequenceStr += '  N     E     S     W\n';
     sequenceStr += '------------------------\n';
 
-    let row = '  '.repeat(dealerIdx);
-    let col = dealerIdx;
+    let row: string = '  '.repeat(dealerIdx);
+    let col: number = dealerIdx;
 
-    biddingSequence.forEach((item) => {
-      const bid = item.bid || 'Pass';
-      const displayBid = bid.length < 4 ? bid.padEnd(5) : bid.padEnd(5);
+    biddingSequence.forEach((item: any) => {
+      const bid: string = item.bid || 'Pass';
+      const displayBid: string = bid.length < 4 ? bid.padEnd(5) : bid.padEnd(5);
       row += displayBid;
 
       col++;
@@ -108,7 +111,7 @@ export function analyzeBiddingPrompt(params, nsSystem = 'natural-2over1', ewSyst
     sequenceStr += '```\n';
   }
 
-  const userPrompt = `请先给出叫牌进程评估结论（1-2句话），然后分析关键决策点和后续发展。
+  const userPrompt: string = `请先给出叫牌进程评估结论（1-2句话），然后分析关键决策点和后续发展。
 
 【叫牌信息】
 - 局况：${vulnerability || '未知'}
@@ -123,13 +126,13 @@ ${sequenceStr}`;
   };
 }
 
-export function suggestBidPrompt(params, nsSystem = 'natural-2over1', ewSystem = 'natural-2over1') {
-  const nsRulesText = getSystemRulesText(nsSystem);
-  const ewRulesText = getSystemRulesText(ewSystem);
+export function suggestBidPrompt(params: any, nsSystem: string = 'natural-2over1', ewSystem: string = 'natural-2over1'): { system: string; user: string } {
+  const nsRulesText: string = getSystemRulesText(nsSystem);
+  const ewRulesText: string = getSystemRulesText(ewSystem);
   const nsConventions = getEnabledConventions(nsSystem);
   const ewConventions = getEnabledConventions(ewSystem);
 
-  let conventionsText = '';
+  let conventionsText: string = '';
   if (nsConventions.length > 0) {
     conventionsText += '\n【NS 方当前启用的约定叫】\n';
     for (const c of nsConventions) {
@@ -145,16 +148,16 @@ export function suggestBidPrompt(params, nsSystem = 'natural-2over1', ewSystem =
 
   const { hand, biddingSequence, vulnerability, position } = params;
 
-  const handStr = `♠ ${hand.spades || '-'}  |  ♥ ${hand.hearts || '-'}  |  ♦ ${hand.diamonds || '-'}  |  ♣ ${hand.clubs || '-'}`;
+  const handStr: string = `♠ ${hand.spades || '-'}  |  ♥ ${hand.hearts || '-'}  |  ♦ ${hand.diamonds || '-'}  |  ♣ ${hand.clubs || '-'}`;
 
-  let sequenceStr = '';
+  let sequenceStr: string = '';
   if (biddingSequence && biddingSequence.length > 0) {
-    sequenceStr = biddingSequence.map(item => `${item.position}: ${item.bid}`).join(' → ');
+    sequenceStr = biddingSequence.map((item: any) => `${item.position}: ${item.bid}`).join(' → ');
   } else {
     sequenceStr = '尚无叫牌';
   }
 
-  const userPrompt = `请先给出推荐的叫品（一句话），然后说明理由和后续规划。
+  const userPrompt: string = `请先给出推荐的叫品（一句话），然后说明理由和后续规划。
 
 【手牌信息】
 - 你的位置：${position || '未知'}

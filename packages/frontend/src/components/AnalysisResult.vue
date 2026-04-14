@@ -23,7 +23,7 @@
       <div class="result-header">
         <h3 class="result-title">分析结果</h3>
         <button class="btn btn-copy" @click="copyResult" title="复制结果">
-          📋 复制
+          {{ copied ? '已复制 ✓' : '📋 复制' }}
         </button>
       </div>
       <div class="result-content" v-html="renderedContent"></div>
@@ -31,24 +31,22 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 
-const props = defineProps({
-  result: {
-    type: String,
-    default: ''
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  }
-})
+const props = defineProps<{
+  result: string
+  loading: boolean
+}>()
 
-const emit = defineEmits(['copy'])
+const emit = defineEmits<{
+  copy: [text: string]
+}>()
+
+const copied = ref<boolean>(false)
 
 // 改进的 Markdown 渲染
-const renderedContent = computed(() => {
+const renderedContent = computed<string>(() => {
   if (!props.result) return ''
 
   let html = props.result
@@ -60,7 +58,7 @@ const renderedContent = computed(() => {
     .replace(/>/g, '&gt;')
 
   // 2. 提取代码块（```...```），替换为占位符防止内部被处理
-  const codeBlocks = []
+  const codeBlocks: { lang: string; code: string }[] = []
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const idx = codeBlocks.length
     codeBlocks.push({ lang, code: code.trimEnd() })
@@ -68,17 +66,17 @@ const renderedContent = computed(() => {
   })
 
   // 3. 处理表格（|...|）
-  html = html.replace(/^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm, (_, headerRow, separatorRow, bodyRows) => {
-    const headers = headerRow.split('|').filter(c => c.trim()).map(c => c.trim())
-    const rows = bodyRows.trim().split('\n').map(row =>
-      row.split('|').filter(c => c.trim()).map(c => c.trim())
+  html = html.replace(/^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm, (_match: string, headerRow: string, _separatorRow: string, bodyRows: string) => {
+    const headers = headerRow.split('|').filter((c: string) => c.trim()).map((c: string) => c.trim())
+    const rows = bodyRows.trim().split('\n').map((row: string) =>
+      row.split('|').filter((c: string) => c.trim()).map((c: string) => c.trim())
     )
     let table = '<table class="md-table"><thead><tr>'
-    headers.forEach(h => { table += `<th>${h}</th>` })
+    headers.forEach((h: string) => { table += `<th>${h}</th>` })
     table += '</tr></thead><tbody>'
-    rows.forEach(row => {
+    rows.forEach((row: string[]) => {
       table += '<tr>'
-      row.forEach(cell => { table += `<td>${cell}</td>` })
+      row.forEach((cell: string) => { table += `<td>${cell}</td>` })
       table += '</tr>'
     })
     table += '</tbody></table>'
@@ -151,8 +149,8 @@ const renderedContent = computed(() => {
     'hr', 'div', 'pre'
   ])
   const lines = html.split('\n')
-  const output = []
-  let paragraphBuffer = []
+  const output: string[] = []
+  let paragraphBuffer: string[] = []
 
   const flushParagraph = () => {
     if (paragraphBuffer.length > 0) {
@@ -195,10 +193,14 @@ const renderedContent = computed(() => {
   return html
 })
 
-// 复制结果
+// 复制结果（带视觉反馈）
 function copyResult() {
   navigator.clipboard.writeText(props.result).then(() => {
+    copied.value = true
     emit('copy', props.result)
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
   }).catch(() => {
     const textarea = document.createElement('textarea')
     textarea.value = props.result
@@ -206,7 +208,11 @@ function copyResult() {
     textarea.select()
     document.execCommand('copy')
     document.body.removeChild(textarea)
+    copied.value = true
     emit('copy', props.result)
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
   })
 }
 </script>
@@ -327,6 +333,12 @@ function copyResult() {
 .btn-copy:hover {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
+}
+
+.btn-copy.copied {
+  background: rgba(39, 174, 96, 0.2);
+  border-color: #27ae60;
+  color: #27ae60;
 }
 
 .result-content {

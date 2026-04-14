@@ -3,12 +3,34 @@
  * 封装与后端通信的三个核心接口
  */
 
+import type { Hand, BidItem } from '../composables/useBridge'
+
 const BASE_URL = '/api'
+
+interface AnalyzeHandParams {
+  hand: Hand
+  nsSystem: string
+  ewSystem: string
+}
+
+interface AnalyzeBiddingParams {
+  sequence: BidItem[]
+  nsSystem: string
+  ewSystem: string
+}
+
+interface SuggestBidParams {
+  hand: Hand
+  sequence: BidItem[]
+  position: string
+  nsSystem: string
+  ewSystem: string
+}
 
 /**
  * 通用请求方法
  */
-async function request(endpoint, data) {
+async function request(endpoint: string, data: Record<string, unknown>): Promise<string> {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -28,7 +50,7 @@ async function request(endpoint, data) {
 /**
  * 分析手牌
  */
-export async function analyzeHand(params) {
+export async function analyzeHand(params: AnalyzeHandParams): Promise<string> {
   return request('/analyze-hand', {
     hand: params.hand,
     nsSystem: params.nsSystem,
@@ -39,9 +61,9 @@ export async function analyzeHand(params) {
 /**
  * 分析叫牌序列
  */
-export async function analyzeBidding(params) {
-  const biddingSequence = (params.sequence || []).map(item => ({
-    position: item.player || item.position,
+export async function analyzeBidding(params: AnalyzeBiddingParams): Promise<string> {
+  const biddingSequence = (params.sequence || []).map((item: BidItem) => ({
+    position: item.player,
     bid: item.bid
   }))
   return request('/analyze-bidding', {
@@ -54,9 +76,9 @@ export async function analyzeBidding(params) {
 /**
  * 获取叫牌建议
  */
-export async function suggestBid(params) {
-  const biddingSequence = (params.sequence || []).map(item => ({
-    position: item.player || item.position,
+export async function suggestBid(params: SuggestBidParams): Promise<string> {
+  const biddingSequence = (params.sequence || []).map((item: BidItem) => ({
+    position: item.player,
     bid: item.bid
   }))
   return request('/suggest-bid', {

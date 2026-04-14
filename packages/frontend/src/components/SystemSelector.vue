@@ -16,16 +16,18 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  modelValue: { type: String, default: 'natural' },
-  compact: { type: Boolean, default: false }
-})
+<script setup lang="ts">
+defineProps<{
+  modelValue: string
+  compact?: boolean
+}>()
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+}>()
 
-function onChange(event) {
-  emit('update:modelValue', event.target.value)
+function onChange(event: Event) {
+  emit('update:modelValue', (event.target as HTMLSelectElement).value)
 }
 </script>
 
