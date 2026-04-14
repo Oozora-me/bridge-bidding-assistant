@@ -12,7 +12,7 @@ export enum LogLevel {
 }
 
 const LOG_DIR: string = process.env.LOG_DIR || path.resolve(__dirname, '../../logs');
-const LOG_LEVEL: LogLevel = (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO;
+const LOG_LEVEL: LogLevel = (process.env.LOG_LEVEL as unknown as LogLevel) || LogLevel.INFO;
 const LOG_CONSOLE: boolean = process.env.LOG_CONSOLE !== 'false'; // 默认启用
 
 if (!fs.existsSync(LOG_DIR)) {
