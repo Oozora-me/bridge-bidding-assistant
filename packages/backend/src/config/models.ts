@@ -24,16 +24,30 @@ export interface ModelConfig {
 // ============================================================
 
 /**
- * 可用模型列表
+ * 可用免费模型列表
  *
- * - GLM-4-Flash:      免费, 128K上下文, 官方并发200, 默认rateLimit=100
- * - GLM-4.7-Flash:    免费, 200K上下文, 官方并发200, 默认rateLimit=100
- * - GLM-4V-Flash:     免费, 多模态, 官方并发200, 默认rateLimit=100 (暂不启用，纯文本场景)
+ * 注：Cogview-3-Flash（图片生成）和 CogVideoX-Flash（视频生成）
+ *     使用不同的 API 端点，无法用于文本对话分析，此处不纳入。
+ *
+ * - GLM-4-Flash:              免费, 128K上下文, 官方并发200
+ * - GLM-4-Flash-250414:       免费, 128K上下文, 官方并发200 (带日期后缀的版本)
+ * - GLM-4.7-Flash:            免费, 200K上下文, 官方并发200
+ * - GLM-4V-Flash:             免费, 多模态(图片/视频/文本), 官方并发200
+ * - GLM-4.6V-Flash:           免费, 多模态(图片/视频/文本), 官方并发200
+ * - GLM-4.1V-Thinking-Flash:  免费, 视觉推理, 64K上下文, 官方并发200
  */
 export const AVAILABLE_MODELS: ModelConfig[] = [
   {
     id: 'GLM-4-Flash',
     name: 'GLM-4-Flash',
+    contextLength: 128,
+    maxConcurrency: 200,
+    defaultRateLimit: 100,
+    enabled: true,
+  },
+  {
+    id: 'GLM-4-Flash-250414',
+    name: 'GLM-4-Flash-250414',
     contextLength: 128,
     maxConcurrency: 200,
     defaultRateLimit: 100,
@@ -53,7 +67,23 @@ export const AVAILABLE_MODELS: ModelConfig[] = [
     contextLength: 128,
     maxConcurrency: 200,
     defaultRateLimit: 100,
-    enabled: false, // 暂不启用，纯文本场景
+    enabled: true,
+  },
+  {
+    id: 'GLM-4.6V-Flash',
+    name: 'GLM-4.6V-Flash (多模态)',
+    contextLength: 128,
+    maxConcurrency: 200,
+    defaultRateLimit: 100,
+    enabled: true,
+  },
+  {
+    id: 'GLM-4.1V-Thinking-Flash',
+    name: 'GLM-4.1V-Thinking-Flash (视觉推理)',
+    contextLength: 64,
+    maxConcurrency: 200,
+    defaultRateLimit: 100,
+    enabled: true,
   },
 ];
 
