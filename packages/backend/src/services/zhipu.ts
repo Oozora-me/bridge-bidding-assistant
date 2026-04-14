@@ -96,7 +96,7 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     model: model || DEFAULT_MODEL,
     messages,
     temperature: temperature !== undefined ? temperature : 0.7,
-    max_tokens: maxTokens || 2048,
+    max_tokens: maxTokens || 4096,
     stream: false,
   };
 
@@ -176,7 +176,7 @@ export async function* chatStream(options: ChatOptions): AsyncGenerator<string, 
     model: model || DEFAULT_MODEL,
     messages,
     temperature: temperature !== undefined ? temperature : 0.7,
-    max_tokens: maxTokens || 2048,
+    max_tokens: maxTokens || 4096,
     stream: true,
   };
 

@@ -7,16 +7,26 @@ import type { Hand, BidItem } from '../composables/useBridge'
 
 const BASE_URL = '/api'
 
+export interface ModelInfo {
+  id: string
+  name: string
+  contextLength: number
+  maxConcurrency: number
+  defaultRateLimit: number
+}
+
 interface AnalyzeHandParams {
   hand: Hand
   nsSystem: string
   ewSystem: string
+  model?: string
 }
 
 interface AnalyzeBiddingParams {
   sequence: BidItem[]
   nsSystem: string
   ewSystem: string
+  model?: string
 }
 
 interface SuggestBidParams {
@@ -25,6 +35,7 @@ interface SuggestBidParams {
   position: string
   nsSystem: string
   ewSystem: string
+  model?: string
 }
 
 /**
@@ -48,13 +59,30 @@ async function request(endpoint: string, data: Record<string, unknown>): Promise
 }
 
 /**
+ * 获取可用模型列表
+ */
+export async function getModels(): Promise<ModelInfo[]> {
+  const response = await fetch(`${BASE_URL}/models`)
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: '网络请求失败' }))
+    throw new Error(errorData.error || `请求失败 (${response.status})`)
+  }
+
+  const result = await response.json()
+  if (!result.success) throw new Error(result.error || '请求失败')
+  return result.data || []
+}
+
+/**
  * 分析手牌
  */
 export async function analyzeHand(params: AnalyzeHandParams): Promise<string> {
   return request('/analyze-hand', {
     hand: params.hand,
     nsSystem: params.nsSystem,
-    ewSystem: params.ewSystem
+    ewSystem: params.ewSystem,
+    ...(params.model ? { model: params.model } : {})
   })
 }
 
@@ -69,7 +97,8 @@ export async function analyzeBidding(params: AnalyzeBiddingParams): Promise<stri
   return request('/analyze-bidding', {
     biddingSequence,
     nsSystem: params.nsSystem,
-    ewSystem: params.ewSystem
+    ewSystem: params.ewSystem,
+    ...(params.model ? { model: params.model } : {})
   })
 }
 
@@ -86,6 +115,7 @@ export async function suggestBid(params: SuggestBidParams): Promise<string> {
     biddingSequence,
     position: params.position || 'S',
     nsSystem: params.nsSystem,
-    ewSystem: params.ewSystem
+    ewSystem: params.ewSystem,
+    ...(params.model ? { model: params.model } : {})
   })
 }

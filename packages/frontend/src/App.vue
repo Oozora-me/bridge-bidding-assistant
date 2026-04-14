@@ -28,6 +28,12 @@
               <option value="W">西 (W)</option>
             </select>
           </div>
+          <div class="model-selector">
+            <label class="model-label">模型:</label>
+            <select v-model="selectedModel" class="model-select">
+              <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }}</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="header-bottom">
@@ -125,10 +131,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useBridge } from './composables/useBridge'
 import type { Hand, BidItem } from './composables/useBridge'
-import { analyzeHand as apiAnalyzeHand, analyzeBidding as apiAnalyzeBidding, suggestBid as apiSuggestBid } from './api/bridge'
+import { analyzeHand as apiAnalyzeHand, analyzeBidding as apiAnalyzeBidding, suggestBid as apiSuggestBid, getModels } from './api/bridge'
+import type { ModelInfo } from './api/bridge'
 
 import SystemSelector from './components/SystemSelector.vue'
 import HandInput from './components/HandInput.vue'
@@ -145,6 +152,20 @@ const nsSystem = ref<string>('natural')
 const ewSystem = ref<string>('natural')
 const activeTab = ref<string>('hand')
 const dealer = ref<string>('N')
+
+const selectedModel = ref<string>('GLM-4-Flash')
+const models = ref<ModelInfo[]>([])
+
+onMounted(async () => {
+  try {
+    models.value = await getModels()
+    if (models.value.length > 0) {
+      selectedModel.value = models.value[0].id
+    }
+  } catch (e) {
+    console.error('获取模型列表失败', e)
+  }
+})
 
 const hand = ref<Hand>({ spades: '', hearts: '', diamonds: '', clubs: '' })
 const biddingSequence = ref<BidItem[]>([])
@@ -186,7 +207,7 @@ const doAnalyzeHand = async () => {
   isAnalyzing.value = true
   handAnalysisResult.value = ''
   try {
-    handAnalysisResult.value = await apiAnalyzeHand({ hand: hand.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
+    handAnalysisResult.value = await apiAnalyzeHand({ hand: hand.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
   } catch (error: unknown) {
     handAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -198,7 +219,7 @@ const doAnalyzeBidding = async () => {
   isAnalyzing.value = true
   biddingAnalysisResult.value = ''
   try {
-    biddingAnalysisResult.value = await apiAnalyzeBidding({ sequence: biddingSequence.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
+    biddingAnalysisResult.value = await apiAnalyzeBidding({ sequence: biddingSequence.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
   } catch (error: unknown) {
     biddingAnalysisResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -210,7 +231,7 @@ const doSuggestBid = async () => {
   isAnalyzing.value = true
   suggestResult.value = ''
   try {
-    suggestResult.value = await apiSuggestBid({ hand: suggestHand.value, sequence: suggestBiddingSequence.value, position: suggestNextPlayer.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value })
+    suggestResult.value = await apiSuggestBid({ hand: suggestHand.value, sequence: suggestBiddingSequence.value, position: suggestNextPlayer.value, nsSystem: nsSystem.value, ewSystem: ewSystem.value, model: selectedModel.value })
   } catch (error: unknown) {
     suggestResult.value = `分析失败：${(error as Error).message}`
   } finally {
@@ -315,6 +336,32 @@ const copyResult = (text: string) => {
 
 .dealer-select:hover { border-color: #3d7a4d; }
 .dealer-select option { background: #1a472a; color: #fff; }
+
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.model-label {
+  color: #a8d5a8;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.model-select {
+  padding: 0.25rem 0.4rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #2d5a3d;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.model-select:hover { border-color: #3d7a4d; }
+.model-select option { background: #1a472a; color: #fff; }
 
 .header-bottom {
   display: flex;
