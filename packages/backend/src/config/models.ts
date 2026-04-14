@@ -38,35 +38,11 @@ export interface ModelConfig {
  */
 export const AVAILABLE_MODELS: ModelConfig[] = [
   {
-    id: 'GLM-4-Flash',
-    name: 'GLM-4-Flash',
-    contextLength: 128,
-    maxConcurrency: 200,
-    defaultRateLimit: 100,
-    enabled: true,
-  },
-  {
-    id: 'GLM-4-Flash-250414',
-    name: 'GLM-4-Flash-250414',
-    contextLength: 128,
-    maxConcurrency: 5,
-    defaultRateLimit: 3,
-    enabled: true,
-  },
-  {
     id: 'GLM-4.7-Flash',
     name: 'GLM-4.7-Flash',
     contextLength: 200,
     maxConcurrency: 1,
     defaultRateLimit: 1,
-    enabled: true,
-  },
-  {
-    id: 'GLM-4V-Flash',
-    name: 'GLM-4V-Flash (多模态)',
-    contextLength: 128,
-    maxConcurrency: 10,
-    defaultRateLimit: 5,
     enabled: true,
   },
   {
@@ -83,6 +59,30 @@ export const AVAILABLE_MODELS: ModelConfig[] = [
     contextLength: 64,
     maxConcurrency: 5,
     defaultRateLimit: 3,
+    enabled: true,
+  },
+  {
+    id: 'GLM-4V-Flash',
+    name: 'GLM-4V-Flash (多模态)',
+    contextLength: 128,
+    maxConcurrency: 10,
+    defaultRateLimit: 5,
+    enabled: true,
+  },
+  {
+    id: 'GLM-4-Flash-250414',
+    name: 'GLM-4-Flash-250414',
+    contextLength: 128,
+    maxConcurrency: 5,
+    defaultRateLimit: 3,
+    enabled: true,
+  },
+  {
+    id: 'GLM-4-Flash',
+    name: 'GLM-4-Flash',
+    contextLength: 128,
+    maxConcurrency: 200,
+    defaultRateLimit: 100,
     enabled: true,
   },
 ];
