@@ -492,18 +492,41 @@ const copyResult = (text: string) => {
 }
 
 @media (max-width: 768px) {
-  .app-main { flex-direction: column; overflow-y: auto; }
+  .app { overflow-y: auto; height: auto; min-height: 100vh; min-height: 100dvh; }
+  .app-main { flex-direction: column; overflow-y: visible; padding: 0.5rem 0.75rem; gap: 0.75rem; }
   .panel-left { flex: none; width: 100%; overflow-y: visible; }
-  .panel-right { flex: none; min-height: 300px; }
-  .header-top { flex-direction: column; gap: 0.3rem; align-items: flex-start; }
-  .header-controls { width: 100%; flex-wrap: wrap; gap: 0.4rem; }
+  .panel-right { flex: none; min-height: 50vh; }
+
+  /* 头部控件折叠为两行 */
+  .header-top { flex-direction: column; gap: 0.4rem; align-items: stretch; padding: 0.4rem 0.75rem; }
+  .header-controls { width: 100%; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-start; }
+  .system-pair { width: 100%; justify-content: space-between; }
+  .dealer-selector, .model-selector { flex: 1; min-width: 0; }
+  .model-selector { flex-wrap: wrap; }
+  .model-select { flex: 1; min-width: 0; }
+  .provider-select { min-width: 80px; }
+
+  .header-bottom { padding: 0 0.75rem 0.3rem; }
+  .tabs { width: 100%; }
+  .tab-button { flex: 1; text-align: center; padding: 0.35rem 0.3rem; }
+
+  .app-title { font-size: 1.1rem; }
+  .btn-large { width: 100%; }
 }
 
-@media (max-width: 600px) {
-  .header-top { padding: 0.3rem 1rem; }
-  .header-bottom { padding: 0 1rem 0.25rem; }
-  .app-main { padding: 0.4rem 1rem; }
+@media (max-width: 480px) {
+  .header-top { padding: 0.3rem 0.6rem; }
+  .header-bottom { padding: 0 0.6rem 0.25rem; }
+  .app-main { padding: 0.4rem 0.6rem; }
   .app-title { font-size: 1rem; }
-  .tab-button { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+  .tab-button { padding: 0.3rem 0.2rem; font-size: 0.7rem; }
+  .system-pair { flex-direction: column; gap: 0.3rem; }
+  .system-item { width: 100%; }
+  .system-item .selector-dropdown { flex: 1; width: 100%; }
+  .dealer-selector { width: 100%; }
+  .dealer-select { flex: 1; }
+  .model-selector { flex-direction: column; gap: 0.3rem; }
+  .model-label { width: 100%; }
+  .model-select { width: 100%; }
 }
 </style>

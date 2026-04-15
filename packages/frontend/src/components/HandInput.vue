@@ -374,4 +374,27 @@ function clearHand() {
 .card-count-error {
   color: #e74c3c !important;
 }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .hand-input { padding: 0.6rem 0.75rem; border-radius: 10px; }
+  .hand-input-header { margin-bottom: 0.4rem; }
+  .hand-input-title { font-size: 0.9rem; }
+  .btn-small { padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+  .card-input {
+    height: 2.4rem;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    padding: 0.3rem 0.5rem;
+  }
+  .suit-label { font-size: 1.3rem; width: 1.8rem; }
+  .card-count { font-size: 0.85rem; width: 1.8rem; }
+  .hand-stats-inline { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
+}
+
+@media (max-width: 480px) {
+  .hand-input { padding: 0.5rem 0.6rem; }
+  .card-input { height: 2.6rem; font-size: 1.05rem; }
+  .suit-label { font-size: 1.4rem; }
+}
 </style>

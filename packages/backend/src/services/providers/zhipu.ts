@@ -34,12 +34,14 @@ const REQUEST_TIMEOUT: number = 60000
  * - GLM-4.1V-Thinking-Flash:  免费, 视觉推理, 64K上下文, 官方并发200
  */
 const models: ModelConfig[] = [
-  { id: 'GLM-4.7-Flash', name: 'GLM-4.7-Flash', contextLength: 200, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
-  { id: 'GLM-4.6V-Flash', name: 'GLM-4.6V-Flash (多模态)', contextLength: 128, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
-  { id: 'GLM-4.1V-Thinking-Flash', name: 'GLM-4.1V-Thinking-Flash (视觉推理)', contextLength: 64, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
-  { id: 'GLM-4V-Flash', name: 'GLM-4V-Flash (多模态)', contextLength: 128, maxConcurrency: 10, defaultRateLimit: 5, enabled: true },
-  { id: 'GLM-4-Flash-250414', name: 'GLM-4-Flash-250414', contextLength: 128, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
+  // 非多模态（按并发数降序）
   { id: 'GLM-4-Flash', name: 'GLM-4-Flash', contextLength: 128, maxConcurrency: 200, defaultRateLimit: 100, enabled: true },
+  { id: 'GLM-4-Flash-250414', name: 'GLM-4-Flash-250414', contextLength: 128, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
+  { id: 'GLM-4.7-Flash', name: 'GLM-4.7-Flash', contextLength: 200, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
+  // 多模态（按并发数降序）
+  { id: 'GLM-4V-Flash', name: 'GLM-4V-Flash (多模态)', contextLength: 128, maxConcurrency: 10, defaultRateLimit: 5, enabled: true },
+  { id: 'GLM-4.1V-Thinking-Flash', name: 'GLM-4.1V-Thinking-Flash (视觉推理)', contextLength: 64, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
+  { id: 'GLM-4.6V-Flash', name: 'GLM-4.6V-Flash (多模态)', contextLength: 128, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
 ]
 
 // ============================================================

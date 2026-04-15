@@ -15,7 +15,7 @@
     <div v-else-if="!result" class="empty-placeholder">
       <div class="placeholder-icon">🃏</div>
       <p class="placeholder-text">AI 分析结果将在此处显示</p>
-      <p class="placeholder-hint">请在左侧输入牌型或叫牌序列，点击分析按钮</p>
+      <p class="placeholder-hint">请在上方输入牌型或叫牌序列，点击分析按钮</p>
     </div>
 
     <!-- 结果展示 -->
@@ -524,5 +524,30 @@ function copyResult() {
   border: none;
   border-top: 1px solid #2d5a3d;
   margin: 0.5rem 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .result-container { border-radius: 10px; }
+  .result-header { padding: 0.5rem 0.75rem; }
+  .result-content { padding: 0.75rem; font-size: 0.85rem; }
+  .empty-placeholder { padding: 1.5rem 1rem; border-radius: 10px; }
+  .placeholder-icon { font-size: 2.5rem; }
+  .placeholder-text { font-size: 1rem; }
+  .placeholder-hint { font-size: 0.8rem; }
+
+  .result-content :deep(.md-table) { font-size: 0.8rem; }
+  .result-content :deep(.md-table th),
+  .result-content :deep(.md-table td) { padding: 0.25rem 0.4rem; }
+  .result-content :deep(.md-code-block pre) { font-size: 0.8rem; }
+}
+
+@media (max-width: 480px) {
+  .result-content { padding: 0.6rem; font-size: 0.82rem; line-height: 1.6; }
+  .result-content :deep(.md-h2) { font-size: 1.05rem; }
+  .result-content :deep(.md-h3) { font-size: 0.95rem; }
+  .result-content :deep(.md-table) { font-size: 0.75rem; }
+  .result-content :deep(.md-table th),
+  .result-content :deep(.md-table td) { padding: 0.2rem 0.3rem; }
 }
 </style>

@@ -231,4 +231,19 @@ function clearAll() {
 .bid-cell.pass .bid-text { color: #7f8c8d; background: rgba(127, 140, 141, 0.08); }
 .bid-cell.double .bid-text { color: #e74c3c; background: rgba(231, 76, 60, 0.2); font-weight: bold; }
 .bid-cell.redouble .bid-text { color: #4a90d9; background: rgba(74, 144, 217, 0.2); font-weight: bold; }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .bidding-sequence { padding: 0.6rem 0.75rem; border-radius: 10px; }
+  .sequence-title { font-size: 0.9rem; }
+  .sequence-table th { padding: 0.35rem 0.3rem; font-size: 0.75rem; }
+  .sequence-table td { padding: 0.3rem 0.2rem; min-width: 2.5rem; }
+  .bid-text { font-size: 0.8rem; padding: 0.15rem 0.35rem; }
+  .action-btns .btn { padding: 0.2rem 0.5rem; font-size: 0.7rem; }
+}
+
+@media (max-width: 480px) {
+  .sequence-table th { font-size: 0.7rem; }
+  .bid-text { font-size: 0.75rem; }
+}
 </style>

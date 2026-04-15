@@ -23,7 +23,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // 应用配置
 // ============================================================
 
-const PORT: number = parseInt(process.env.PORT || '3001', 10);
+const PORT: number = parseInt(process.env.PORT || '10240', 10);
 
 // ============================================================
 // 注册 AI 提供商
@@ -75,7 +75,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // API 路由
-app.use('/api', apiRouter);
+app.use('/bridge-bidding-assistant-server/api', apiRouter);
 
 // ============================================================
 // 错误处理

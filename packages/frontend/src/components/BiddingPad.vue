@@ -293,4 +293,57 @@ function placeBid(bid: string) {
   opacity: 0.2;
   cursor: not-allowed;
 }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .pad-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+
+  .level-group {
+    justify-content: center;
+  }
+
+  .level-btn {
+    flex: 1;
+    width: auto;
+    height: 2.2rem;
+    font-size: 0.9rem;
+  }
+
+  .separator {
+    display: none;
+  }
+
+  .strain-group {
+    justify-content: center;
+  }
+
+  .strain-btn {
+    flex: 1;
+    min-width: 0;
+    height: 2.2rem;
+    font-size: 0.9rem;
+    padding: 0 0.2rem;
+  }
+
+  .special-group {
+    justify-content: center;
+  }
+
+  .special-btn {
+    flex: 1;
+    height: 2.2rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bidding-pad { padding: 0.4rem 0.4rem; }
+  .level-btn { height: 2.4rem; font-size: 1rem; }
+  .strain-btn { height: 2.4rem; font-size: 1rem; }
+  .special-btn { height: 2.4rem; font-size: 0.9rem; }
+}
 </style>

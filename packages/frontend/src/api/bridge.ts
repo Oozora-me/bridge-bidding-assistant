@@ -5,7 +5,7 @@
 
 import type { Hand, BidItem } from '../composables/useBridge'
 
-const BASE_URL = '/api'
+const BASE_URL = '/bridge-bidding-assistant-server/api'
 
 export interface ModelInfo {
   id: string
