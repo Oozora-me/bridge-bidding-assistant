@@ -34,7 +34,8 @@ bridge-bidding-assistant/
 ├── packages/
 │   ├── backend/                  # 后端服务
 │   │   ├── config/
-│   │   │   └── providers.json    # Provider 统一配置（API Key、模型、限速）
+│   │   │   ├── providers.json.example # Provider 配置模板（复制为 providers.json 并填入 Key）
+│   │   │   └── providers.json         # Provider 统一配置（含 API Key，已在 .gitignore 中排除）
 │   │   ├── src/
 │   │   │   ├── index.ts          # Express 入口
 │   │   │   ├── config/
@@ -73,9 +74,20 @@ bridge-bidding-assistant/
 │   ├── bidding-systems/           # 体系规则文档（单一数据源）
 │   │   ├── 2-1-GF-System.md      # 自然 2/1 GF 体系
 │   │   └── Precision-System.md   # 精确叫牌体系
-│   └── problems/                 # 问题分析报告
-│       └── ai-response-quality-analysis.md
+│   ├── problems/                 # 问题分析报告
+│   │   └── ai-response-quality-analysis.md
+│   └── model_evaluation_reports/ # AI 模型评估报告
+│       ├── opening_bid/          # 开叫评估
+│       ├── bidding_analysis/     # 叫牌进程分析评估
+│       └── bid_suggestion/       # 叫牌建议评估
 ├── scripts/
+│   ├── evaluation/               # AI 模型评估框架
+│   │   ├── config.ts             # 共享配置和类型
+│   │   ├── run.ts                # 评估运行器（支持按维度运行）
+│   │   └── cases/                # 测试用例
+│   │       ├── opening_bid.ts    # 开叫场景（10 个）
+│   │       ├── bidding_analysis.ts # 叫牌进程分析场景（8 个）
+│   │       └── bid_suggestion.ts # 叫牌建议场景（8 个）
 │   └── build.mjs                 # 构建脚本
 ├── package.json
 └── README.md
@@ -96,29 +108,12 @@ npm install
 
 ### 配置 Provider
 
-编辑 `packages/backend/config/providers.json`，填入 API Key 并启用需要的提供商：
-
-```json
-{
-  "providers": {
-    "zhipu": {
-      "enabled": true,
-      "apiKey": "your_zhipu_key",
-      "models": [...]
-    },
-    "deepseek": {
-      "enabled": true,
-      "apiKey": "your_deepseek_key",
-      "models": [...]
-    },
-    "github": {
-      "enabled": true,
-      "apiKey": "your_github_token",
-      "models": [...]
-    }
-  }
-}
+```bash
+# 复制配置模板
+cp packages/backend/config/providers.json.example packages/backend/config/providers.json
 ```
+
+编辑 `providers.json`，填入 API Key 并启用需要的提供商。配置模板中包含所有支持的模型及注释说明。
 
 **API Key 获取**：
 - 智谱AI：https://open.bigmodel.cn
@@ -204,6 +199,37 @@ npm run build:dist
 ```bash
 LOG_LEVEL=0 npm run dev
 ```
+
+## AI 模型评估
+
+项目内置评估框架，可对 AI 模型的桥牌分析能力进行自动化测试和多模型对比。
+
+### 评估维度
+
+| 维度 | API | 用例数 | 说明 |
+|------|-----|--------|------|
+| 开叫评估 | `/api/analyze-hand` | 10 | 根据手牌判断正确开叫 |
+| 叫牌进程分析 | `/api/analyze-bidding` | 8 | 分析已有叫牌序列的含义 |
+| 叫牌建议 | `/api/suggest-bid` | 8 | 结合手牌和进程推荐下一步叫品 |
+
+### 运行评估
+
+```bash
+# 运行全部维度
+npx tsx scripts/evaluation/run.ts
+
+# 只运行某个维度
+npx tsx scripts/evaluation/run.ts opening_bid
+npx tsx scripts/evaluation/run.ts bidding_analysis
+npx tsx scripts/evaluation/run.ts bid_suggestion
+```
+
+评估结果输出到 `docs/model_evaluation_reports/{维度}/` 目录，包含 Markdown 报告和 JSON 原始数据。
+
+### 自定义测试
+
+- 编辑 `scripts/evaluation/config.ts` 中的 `MODELS_TO_TEST` 配置要测试的模型
+- 编辑 `scripts/evaluation/cases/` 下的用例文件添加新场景
 
 ## License
 

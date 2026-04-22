@@ -91,7 +91,7 @@ const DEFAULT_CONFIG: Record<string, SystemConfig> = {
       '2C': { hcpRange: [11, 15], shape: '梅花6张以上', description: '11-15 HCP' },
       '2D': { hcpRange: [11, 15], description: '多用途' },
       '2H/2S': { hcpRange: [6, 10], shape: '好的6张高花套', description: '弱二开叫' },
-      '2NT': { hcpRange: [20, 21], shape: '均型', description: '20-21 HCP，均型' },
+      '2NT': { hcpRange: [22, 24], shape: '均型', description: '22-24 HCP，均型' },
     },
     response: {
       '1C_negative': { hcpMax: 7, description: '1♣-1♦消极应叫' },

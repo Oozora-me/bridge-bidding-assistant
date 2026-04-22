@@ -3,6 +3,7 @@
  */
 
 import axios from 'axios';
+import * as path from 'path';
 
 // ============================================================
 // 类型定义
@@ -110,7 +111,7 @@ export interface TestResult {
 
 export const BASE_URL = process.env.BASE_URL || 'http://localhost:10240';
 export const API_PREFIX = `${BASE_URL}/bridge-bidding-assistant-server`;
-export const REPORT_BASE_DIR = '/sessions/69e6d1fa41619118b795ef9e/workspace/docs/model_evaluation_reports';
+export const REPORT_BASE_DIR = process.env.REPORT_DIR || path.resolve(import.meta.dirname, '../../docs/model_evaluation_reports');
 
 /** 要测试的模型 */
 export const MODELS_TO_TEST: ModelConfig[] = [
