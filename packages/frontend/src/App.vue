@@ -18,6 +18,7 @@
               <label class="system-label">EW:</label>
               <SystemSelector v-model="ewSystem" compact />
             </div>
+            <button class="btn-doc" @click="showDocModal = true" title="查看体系说明">📖</button>
           </div>
           <div class="dealer-selector">
             <label class="dealer-label">开叫人:</label>
@@ -36,6 +37,7 @@
             <select v-model="selectedModel" class="model-select">
               <option v-for="m in currentModels" :key="m.id" :value="m.id">{{ m.name }}</option>
             </select>
+            <button class="btn-usage" @click="showUsageModal = true" title="查看用量">📊</button>
           </div>
         </div>
       </div>
@@ -130,6 +132,8 @@
         />
       </div>
     </main>
+    <SystemDocModal v-model="showDocModal" />
+    <UsageModal v-model="showUsageModal" />
   </div>
 </template>
 
@@ -145,6 +149,8 @@ import HandInput from './components/HandInput.vue'
 import BiddingPad from './components/BiddingPad.vue'
 import BiddingSequence from './components/BiddingSequence.vue'
 import AnalysisResult from './components/AnalysisResult.vue'
+import UsageModal from './components/UsageModal.vue'
+import SystemDocModal from './components/SystemDocModal.vue'
 
 const { getNextPlayer, getDisabledBids } = useBridge()
 
@@ -192,6 +198,8 @@ const suggestHand = ref<Hand>({ spades: '', hearts: '', diamonds: '', clubs: '' 
 const suggestBiddingSequence = ref<BidItem[]>([])
 
 const isAnalyzing = ref<boolean>(false)
+const showUsageModal = ref<boolean>(false)
+const showDocModal = ref<boolean>(false)
 const handAnalysisResult = ref<string>('')
 const biddingAnalysisResult = ref<string>('')
 const suggestResult = ref<string>('')
@@ -384,6 +392,36 @@ const copyResult = (text: string) => {
 
 .provider-select {
   min-width: 90px;
+}
+
+.btn-doc {
+  background: none;
+  border: 1px solid #2d5a3d;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-doc:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3d7a4d;
+}
+
+.btn-usage {
+  background: none;
+  border: 1px solid #2d5a3d;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-usage:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #3d7a4d;
 }
 
 .header-bottom {
