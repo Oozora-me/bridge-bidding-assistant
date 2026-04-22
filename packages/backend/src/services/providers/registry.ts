@@ -28,8 +28,8 @@ class ProviderRegistry {
     return this.getAllProviders().map(p => ({
       id: p.id,
       name: p.name,
-      models: p.models.filter(m => m.enabled).map(({ id, name, contextLength, maxConcurrency, defaultRateLimit }) => ({
-        id, name, contextLength, maxConcurrency, defaultRateLimit, enabled: true
+      models: p.models.filter(m => m.enabled).map(({ id, name, contextLength, maxConcurrency, defaultRateLimit, dailyLimit }) => ({
+        id, name, contextLength, maxConcurrency, defaultRateLimit, dailyLimit, enabled: true
       }))
     }))
   }

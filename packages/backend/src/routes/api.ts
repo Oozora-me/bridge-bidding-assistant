@@ -13,8 +13,11 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { analyzeHandPrompt, analyzeBiddingPrompt, suggestBidPrompt } from '../prompts/bridge.js';
 import { getEnabledConventions } from '../config/bidding.js';
+import { getProvidersConfig, updateProviderConfig } from '../config/providersConfig.js';
+import { checkUsage, recordConcurrencyStart, recordConcurrencyEnd, recordSuccess, getUsageSummary } from '../services/usageTracker.js';
 import { providerRegistry } from '../services/providers/registry.js';
 import { logger } from '../services/logger.js';
+import { getSystemDocContent } from '../config/systemDocs.js';
 
 const router: Router = express.Router();
 
@@ -28,13 +31,12 @@ router.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ============================================================
-// 中间件：按模型动态速率限制（基于内存的滑动窗口）
+// 中间件：多维度动态速率限制（全局用量 + per-IP 分钟限速 + 并发控制）
 // ============================================================
 
-// 存储每个 IP + 模型 的请求时间戳
+// 存储 per-IP + 模型 的请求时间戳（用于 per-IP 分钟限速）
 const rateLimitRequests = new Map<string, number[]>();
 
-// 默认速率限制（当模型配置找不到时使用）
 const DEFAULT_RATE_LIMIT: number = 10;
 const RATE_LIMIT_WINDOW_MS: number = 60 * 1000; // 1 分钟窗口
 
@@ -52,14 +54,30 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 /**
- * 动态速率限制中间件
- * 根据请求中指定的 model 参数（格式: providerId:modelId），从模型配置中获取对应的 rate limit
+ * 多维度动态速率限制中间件
+ * 1. 全局检查：并发数、每分钟请求数、每日限额
+ * 2. per-IP 分钟限速检查
+ * 3. 通过后记录并发开始，请求结束时释放
  */
 function dynamicRateLimit(req: Request, res: Response, next: NextFunction): void {
   const modelKey: string = req.body?.model || '';
   const resolved = providerRegistry.getModelConfig(modelKey);
-  const max: number = resolved?.model?.defaultRateLimit || DEFAULT_RATE_LIMIT;
+  const minuteLimit: number = resolved?.model?.defaultRateLimit || DEFAULT_RATE_LIMIT;
+  const maxConcurrency: number = resolved?.model?.maxConcurrency || 10;
+  const dailyLimit: number | undefined = resolved?.model?.dailyLimit;
 
+  // 1. 全局多维度检查（并发、每分钟、每日）
+  const usageCheck = checkUsage(modelKey, { minuteLimit, maxConcurrency, dailyLimit });
+  if (!usageCheck.allowed) {
+    logger.warn('RateLimit', `全局限制拒绝（模型: ${modelKey || '默认'}）: ${usageCheck.reason}`);
+    res.status(429).json({
+      success: false,
+      error: usageCheck.reason,
+    });
+    return;
+  }
+
+  // 2. per-IP 分钟限速检查
   const ip: string = req.ip || req.connection.remoteAddress || 'unknown';
   const key: string = `${ip}:${modelKey || 'default'}`;
   const now = Date.now();
@@ -76,18 +94,25 @@ function dynamicRateLimit(req: Request, res: Response, next: NextFunction): void
     timestamps.shift();
   }
 
-  if (timestamps.length >= max) {
+  if (timestamps.length >= minuteLimit) {
     const retryAfter = Math.ceil((timestamps[0] + RATE_LIMIT_WINDOW_MS - now) / 1000);
-    logger.warn('RateLimit', `IP ${ip} 请求过于频繁（模型: ${modelKey || '默认'}），已拒绝。当前窗口内请求数: ${timestamps.length}/${max}`);
+    logger.warn('RateLimit', `IP ${ip} 请求过于频繁（模型: ${modelKey || '默认'}），已拒绝。当前窗口内请求数: ${timestamps.length}/${minuteLimit}`);
     res.status(429).json({
       success: false,
-      error: `请求过于频繁，请在 ${retryAfter} 秒后重试（限制: ${max} 次/分钟）`,
+      error: `请求过于频繁，请在 ${retryAfter} 秒后重试（限制: ${minuteLimit} 次/分钟）`,
       retryAfter
     });
     return;
   }
 
   timestamps.push(now);
+
+  // 3. 记录并发开始
+  recordConcurrencyStart(modelKey);
+  res.on('finish', () => {
+    recordConcurrencyEnd(modelKey);
+  });
+
   next();
 }
 
@@ -102,6 +127,74 @@ router.get('/models', (_req: Request, res: Response): void => {
   res.json({
     success: true,
     data: providerRegistry.getProviderInfo(),
+  });
+});
+
+// ============================================================
+// 路由：获取 Provider 配置（API Key 脱敏）
+// ============================================================
+
+router.get('/providers/config', (_req: Request, res: Response): void => {
+  const config = getProvidersConfig();
+  // API Key 脱敏：只保留前 4 位和后 4 位
+  const sanitized: Record<string, any> = {};
+  for (const [id, provider] of Object.entries(config.providers)) {
+    const p = provider as any;
+    sanitized[id] = {
+      ...p,
+      apiKey: p.apiKey ? `${p.apiKey.slice(0, 4)}****${p.apiKey.slice(-4)}` : '',
+    };
+  }
+  res.json({
+    success: true,
+    data: sanitized,
+  });
+});
+
+// ============================================================
+// 路由：更新 Provider 配置
+// ============================================================
+
+router.put('/providers/config/:providerId', (req: Request, res: Response): void => {
+  try {
+    const { providerId } = req.params;
+    const updated = updateProviderConfig(providerId, req.body);
+    // 返回脱敏后的配置
+    res.json({
+      success: true,
+      data: {
+        ...updated,
+        apiKey: updated.apiKey ? `${updated.apiKey.slice(0, 4)}****${updated.apiKey.slice(-4)}` : '',
+      },
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
+// 路由：获取用量摘要
+// ============================================================
+
+router.get('/usage', (_req: Request, res: Response): void => {
+  const providerInfos = providerRegistry.getProviderInfo();
+  const modelConfigs = providerInfos.flatMap(p =>
+    p.models.map(m => ({
+      modelKey: `${p.id}:${m.id}`,
+      modelName: m.name,
+      providerName: p.name,
+      minuteLimit: m.defaultRateLimit,
+      maxConcurrency: m.maxConcurrency,
+      dailyLimit: m.dailyLimit,
+    }))
+  );
+  const summary = getUsageSummary(modelConfigs);
+  res.json({
+    success: true,
+    data: summary,
   });
 });
 
@@ -179,6 +272,8 @@ router.post('/analyze-hand', async (req: Request, res: Response): Promise<void> 
       model: modelConfig.id,
       maxTokens: 4096
     });
+
+    recordSuccess(modelKey);
 
     res.json({
       success: true,
@@ -266,6 +361,8 @@ router.post('/analyze-bidding', async (req: Request, res: Response): Promise<voi
       model: modelConfig.id,
       maxTokens: 4096
     });
+
+    recordSuccess(modelKey);
 
     res.json({
       success: true,
@@ -362,6 +459,8 @@ router.post('/suggest-bid', async (req: Request, res: Response): Promise<void> =
       maxTokens: 4096
     });
 
+    recordSuccess(modelKey);
+
     res.json({
       success: true,
       data: {
@@ -377,6 +476,27 @@ router.post('/suggest-bid', async (req: Request, res: Response): Promise<void> =
       error: `叫牌建议失败: ${error.message}`
     });
   }
+});
+
+// ============================================================
+// 路由：获取体系文档列表
+// ============================================================
+
+router.get('/system-docs', (_req: Request, res: Response): void => {
+  const systems = [
+    { id: 'natural-2over1', name: '自然二盖一 (2/1 GF)' },
+    { id: 'precision', name: '精确叫牌 (Precision)' },
+  ];
+  res.json({ success: true, data: systems });
+});
+
+// ============================================================
+// 路由：获取指定体系文档
+// ============================================================
+
+router.get('/system-docs/:systemId', (req: Request, res: Response): void => {
+  const content = getSystemDocContent(req.params.systemId);
+  res.json({ success: true, data: { content } });
 });
 
 // ============================================================

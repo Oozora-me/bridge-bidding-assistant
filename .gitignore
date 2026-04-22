@@ -5,3 +5,12 @@ logs/
 .env
 .DS_Store
 tsconfig.tsbuildinfo
+
+# 敏感配置（含 API Key）
+packages/backend/config/providers.json
+
+# 用量数据（运行时生成）
+packages/backend/data/
+
+# 评估报告原始数据（JSON）
+docs/model_evaluation_reports/**/*.json

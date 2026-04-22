@@ -16,6 +16,9 @@ import { logger } from './services/logger.js';
 import { providerRegistry } from './services/providers/registry.js';
 import { ZhipuProvider } from './services/providers/zhipu.js';
 import { GitHubProvider } from './services/providers/github.js';
+import { DeepSeekProvider } from './services/providers/deepseek.js';
+import { loadProvidersConfig, getEnabledProviders } from './config/providersConfig.js';
+import { initSystemDocs } from './config/systemDocs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,15 +29,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT: number = parseInt(process.env.PORT || '10240', 10);
 
 // ============================================================
-// 注册 AI 提供商
+// 初始化系统文档 & 注册 AI 提供商
 // ============================================================
 
-providerRegistry.register(new ZhipuProvider());
-if (process.env.GITHUB_TOKEN) {
-  providerRegistry.register(new GitHubProvider());
-}
+initSystemDocs();
 
-// 注意：速率限制已移至 routes/api.ts 中，按模型动态配置
+loadProvidersConfig();
+
+const PROVIDER_ORDER = ['github', 'zhipu', 'deepseek'];
+
+const providerConstructors: Record<string, any> = {
+  zhipu: (config: any) => new ZhipuProvider(config),
+  github: (config: any) => new GitHubProvider(config),
+  deepseek: (config: any) => new DeepSeekProvider(config),
+};
+
+const enabledProviders = getEnabledProviders();
+const sortedProviders = [...enabledProviders].sort(
+  (a, b) => PROVIDER_ORDER.indexOf(a.id) - PROVIDER_ORDER.indexOf(b.id)
+);
+
+for (const { id, config } of sortedProviders) {
+  const constructor = providerConstructors[id];
+  if (constructor) {
+    providerRegistry.register(constructor(config));
+  }
+}
 
 // ============================================================
 // 创建 Express 应用

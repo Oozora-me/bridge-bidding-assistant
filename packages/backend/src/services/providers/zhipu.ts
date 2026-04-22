@@ -7,21 +7,19 @@
 
 import axios from 'axios'
 import type { AIProvider, ChatOptions, ChatResult, ModelConfig } from './types.js'
+import type { ProviderConfigEntry } from '../../config/providersConfig.js'
 import { logger } from '../logger.js'
 
 // ============================================================
 // 配置
 // ============================================================
 
-const ZHIPU_API_URL: string = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-const ZHIPU_API_KEY: string =
-  process.env.ZHIPU_API_KEY || '8899210c8fad4beaabb34c509506456e.XfQQ9Rq5DZAUSehu'
 const MAX_RETRIES: number = 3
 const RETRY_DELAY: number = 1000
 const REQUEST_TIMEOUT: number = 60000
 
 /**
- * 可用免费模型列表
+ * 可用免费模型列表（仅非多模态）
  *
  * 注：Cogview-3-Flash（图片生成）和 CogVideoX-Flash（视频生成）
  *     使用不同的 API 端点，无法用于文本对话分析，此处不纳入。
@@ -29,19 +27,11 @@ const REQUEST_TIMEOUT: number = 60000
  * - GLM-4-Flash:              免费, 128K上下文, 官方并发200
  * - GLM-4-Flash-250414:       免费, 128K上下文, 官方并发200 (带日期后缀的版本)
  * - GLM-4.7-Flash:            免费, 200K上下文, 官方并发200
- * - GLM-4V-Flash:             免费, 多模态(图片/视频/文本), 官方并发200
- * - GLM-4.6V-Flash:           免费, 多模态(图片/视频/文本), 官方并发200
- * - GLM-4.1V-Thinking-Flash:  免费, 视觉推理, 64K上下文, 官方并发200
  */
-const models: ModelConfig[] = [
-  // 非多模态（按并发数降序）
+const defaultModels: ModelConfig[] = [
   { id: 'GLM-4-Flash', name: 'GLM-4-Flash', contextLength: 128, maxConcurrency: 200, defaultRateLimit: 100, enabled: true },
   { id: 'GLM-4-Flash-250414', name: 'GLM-4-Flash-250414', contextLength: 128, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
   { id: 'GLM-4.7-Flash', name: 'GLM-4.7-Flash', contextLength: 200, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
-  // 多模态（按并发数降序）
-  { id: 'GLM-4V-Flash', name: 'GLM-4V-Flash (多模态)', contextLength: 128, maxConcurrency: 10, defaultRateLimit: 5, enabled: true },
-  { id: 'GLM-4.1V-Thinking-Flash', name: 'GLM-4.1V-Thinking-Flash (视觉推理)', contextLength: 64, maxConcurrency: 5, defaultRateLimit: 3, enabled: true },
-  { id: 'GLM-4.6V-Flash', name: 'GLM-4.6V-Flash (多模态)', contextLength: 128, maxConcurrency: 1, defaultRateLimit: 1, enabled: true },
 ]
 
 // ============================================================
@@ -77,7 +67,23 @@ function isRetryableError(error: any): boolean {
 export class ZhipuProvider implements AIProvider {
   id = 'zhipu'
   name = '智谱AI'
-  models = models
+  models = defaultModels
+  private apiUrl: string
+  private apiKey: string
+  private defaultTemperature: number
+  private defaultMaxTokens: number
+
+  constructor(config?: ProviderConfigEntry) {
+    this.apiUrl = config?.apiUrl || 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+    this.apiKey = config?.apiKey || ''
+    this.defaultTemperature = config?.temperature ?? 0.2
+    this.defaultMaxTokens = config?.maxTokens || 4096
+    this.name = config?.name || '智谱AI'
+    this.models = (config?.models?.length ? config.models : defaultModels).map(m => ({
+      id: m.id, name: m.name, contextLength: m.contextLength,
+      maxConcurrency: m.maxConcurrency, defaultRateLimit: m.defaultRateLimit || (config as any)?.defaultModelRateLimit || 5, dailyLimit: m.dailyLimit, enabled: m.enabled
+    }))
+  }
 
   /**
    * 调用智谱 AI API（非流式模式）
@@ -106,8 +112,8 @@ export class ZhipuProvider implements AIProvider {
     const requestBody = {
       model: modelId,
       messages,
-      temperature: temperature !== undefined ? temperature : 0.7,
-      max_tokens: maxTokens || 4096,
+      temperature: temperature !== undefined ? temperature : this.defaultTemperature,
+      max_tokens: maxTokens || this.defaultMaxTokens,
       stream: false,
     }
 
@@ -116,16 +122,19 @@ export class ZhipuProvider implements AIProvider {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         logger.info('ZhipuAI', `非流式请求 - 第 ${attempt} 次尝试 (模型: ${modelId})`)
+        logger.debug('ZhipuAI', `请求体: ${JSON.stringify(requestBody)}`)
 
-        const response = await axios.post(ZHIPU_API_URL, requestBody, {
+        const response = await axios.post(this.apiUrl, requestBody, {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${ZHIPU_API_KEY}`,
+            Authorization: `Bearer ${this.apiKey}`,
           },
           timeout: REQUEST_TIMEOUT,
         })
 
         const data = response.data
+        logger.debug('ZhipuAI', `响应体: ${JSON.stringify(data)}`)
+
         if (data.choices && data.choices.length > 0) {
           const content: string = data.choices[0].message?.content || ''
           const usage: Record<string, number> = data.usage || {}
@@ -188,8 +197,8 @@ export class ZhipuProvider implements AIProvider {
     const requestBody = {
       model: modelId,
       messages,
-      temperature: temperature !== undefined ? temperature : 0.7,
-      max_tokens: maxTokens || 4096,
+      temperature: temperature !== undefined ? temperature : this.defaultTemperature,
+      max_tokens: maxTokens || this.defaultMaxTokens,
       stream: true,
     }
 
@@ -198,11 +207,12 @@ export class ZhipuProvider implements AIProvider {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         logger.info('ZhipuAI', `流式请求 - 第 ${attempt} 次尝试 (模型: ${modelId})`)
+        logger.debug('ZhipuAI', `请求体: ${JSON.stringify(requestBody)}`)
 
-        const response = await axios.post(ZHIPU_API_URL, requestBody, {
+        const response = await axios.post(this.apiUrl, requestBody, {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${ZHIPU_API_KEY}`,
+            Authorization: `Bearer ${this.apiKey}`,
           },
           timeout: REQUEST_TIMEOUT,
           responseType: 'stream',

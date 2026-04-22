@@ -26,6 +26,7 @@ export interface ModelConfig {
   contextLength: number  // K tokens
   maxConcurrency: number
   defaultRateLimit: number
+  dailyLimit?: number
   enabled: boolean
 }
 
