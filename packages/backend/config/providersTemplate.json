@@ -1,0 +1,163 @@
+{
+  "providers": {
+    "zhipu": {
+      "name": "智谱AI",
+      "comment": "免费模型，官方并发200，无每日限额",
+      "enabled": true,
+      "apiKey": "XXXXX",
+      "apiUrl": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "temperature": 0.2,
+      "maxTokens": 4096,
+      "models": [
+        {
+          "id": "GLM-4-Flash",
+          "name": "GLM-4-Flash",
+          "comment": "主力模型，免费，128K上下文",
+          "contextLength": 128,
+          "maxConcurrency": 200,
+          "defaultRateLimit": 100,
+          "enabled": true
+        },
+        {
+          "id": "GLM-4-Flash-250414",
+          "name": "GLM-4-Flash-250414",
+          "comment": "带日期后缀版本",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 3,
+          "enabled": true
+        },
+        {
+          "id": "GLM-4.7-Flash",
+          "name": "GLM-4.7-Flash",
+          "comment": "最新版，200K上下文",
+          "contextLength": 200,
+          "maxConcurrency": 1,
+          "defaultRateLimit": 1,
+          "enabled": true
+        }
+      ]
+    },
+    "deepseek": {
+      "name": "DeepSeek",
+      "comment": "按量付费，需充值。API: https://platform.deepseek.com",
+      "enabled": true,
+      "apiKey": "YYYYY",
+      "apiUrl": "https://api.deepseek.com/chat/completions",
+      "temperature": 0.2,
+      "maxTokens": 4096,
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "name": "DeepSeek V3",
+          "comment": "主力模型，推理能力强，价格极低",
+          "contextLength": 64,
+          "maxConcurrency": 10,
+          "defaultRateLimit": 5,
+          "enabled": true
+        },
+        {
+          "id": "deepseek-reasoner",
+          "name": "DeepSeek R1",
+          "comment": "推理模型，支持思维链",
+          "contextLength": 64,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 3,
+          "enabled": true
+        }
+      ]
+    },
+    "github": {
+      "name": "GitHub Models",
+      "comment": "免费额度（无 Copilot 订阅）。High 级 50次/天，Low 级 150次/天。详见 https://docs.github.com/en/github-models/prototyping-with-ai-models#rate-limits",
+      "enabled": true,
+      "apiKey": "ZZZZZ",
+      "apiUrl": "https://models.inference.ai.azure.com/chat/completions",
+      "temperature": 0.2,
+      "maxTokens": 4000,
+      "defaultModelRateLimit": 12,
+      "models": [
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "comment": "High级，免费50次/天，8000in/4000out",
+          "contextLength": 128,
+          "maxConcurrency": 2,
+          "defaultRateLimit": 8,
+          "dailyLimit": 50,
+          "enabled": true
+        },
+        {
+          "id": "Meta-Llama-3.1-405B-Instruct",
+          "name": "Llama 3.1 405B",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Meta-Llama-3.1-70B-Instruct",
+          "name": "Llama 3.1 70B",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Meta-Llama-3.1-8B-Instruct",
+          "name": "Llama 3.1 8B",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Mistral-large",
+          "name": "Mistral Large",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Mistral-Nemo",
+          "name": "Mistral Nemo",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Phi-3.5-mini-instruct",
+          "name": "Phi 3.5 Mini",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        },
+        {
+          "id": "Phi-3-medium-128k-instruct",
+          "name": "Phi 3 Medium",
+          "comment": "Low级，免费150次/天",
+          "contextLength": 128,
+          "maxConcurrency": 5,
+          "defaultRateLimit": 12,
+          "dailyLimit": 150,
+          "enabled": true
+        }
+      ]
+    }
+  }
+}
