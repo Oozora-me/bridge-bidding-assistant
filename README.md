@@ -1,6 +1,6 @@
 # ♠ 桥牌叫牌助手 (Bridge Bidding Assistant)
 
-基于 Vue 3 + Express + TypeScript 的智能桥牌叫牌助手，集成智谱 AI (GLM-4-Flash) 提供牌型分析、叫牌进程分析和叫牌建议功能。
+基于 Vue 3 + Express + TypeScript 的智能桥牌叫牌助手，集成多个 AI 模型提供商提供牌型分析、叫牌进程分析和叫牌建议功能。
 
 ## 功能特性
 
@@ -8,9 +8,15 @@
 - **叫牌进程分析** — 记录叫牌序列，AI 评估叫牌进程
 - **叫牌建议** — 结合手牌和当前叫牌进程，推荐下一步叫品
 - **多体系支持** — NS/EW 独立选择叫牌体系（自然二盖一 / 精确叫牌）
+- **完整体系文档** — 内置自然 2/1 GF 和精确叫牌体系的详细规则说明，作为 AI 提示词基础
 - **约定叫配置** — 内置常用约定叫（斯台曼、雅各比转移、黑木问叫等），可开关
+- **体系说明查看** — 点击体系选择器旁的 📖 按钮查看完整规则文档
+- **多模型提供商** — 支持智谱AI、DeepSeek、GitHub Models，前端可切换
+- **用量监控** — 点击 📊 按钮查看各模型的今日用量、限额和剩余次数
+- **多维度限速** — 按分钟（per-IP）、每日（全局）、并发数（全局）三维限速
 - **方位选择** — 支持设置开叫人（北/东/南/西）
 - **结构化输出** — AI 结果按 📌结论 / 🃏牌力 / 💡理由 / 📋后续 四维度展示
+- **移动端适配** — 响应式布局，支持手机/平板访问
 
 ## 技术栈
 
@@ -18,7 +24,7 @@
 |------|------|
 | 前端 | Vue 3 + TypeScript + Vite |
 | 后端 | Express + TypeScript |
-| AI | 智谱 GLM-4-Flash API |
+| AI | 智谱AI / DeepSeek / GitHub Models（多提供商） |
 | 构建 | npm workspaces (monorepo) |
 
 ## 项目结构
@@ -27,39 +33,51 @@
 bridge-bidding-assistant/
 ├── packages/
 │   ├── backend/                  # 后端服务
+│   │   ├── config/
+│   │   │   └── providers.json    # Provider 统一配置（API Key、模型、限速）
 │   │   ├── src/
-│   │   │   ├── index.ts          # Express 入口，速率限制中间件
+│   │   │   ├── index.ts          # Express 入口
 │   │   │   ├── config/
-│   │   │   │   └── bidding.ts    # 叫牌体系配置（规则/约定叫）
+│   │   │   │   ├── bidding.ts    # 叫牌体系配置（规则/约定叫）
+│   │   │   │   ├── systemDocs.ts # 体系文档加载模块
+│   │   │   │   └── providersConfig.ts # Provider 配置管理
 │   │   │   ├── prompts/
 │   │   │   │   └── bridge.ts     # AI 提示词模板
 │   │   │   ├── routes/
 │   │   │   │   └── api.ts        # API 路由
 │   │   │   └── services/
-│   │   │       ├── logger.ts     # 日志服务（可配置等级/输出）
-│   │   │       └── zhipu.ts      # 智谱 AI 客户端
-│   │   ├── package.json
-│   │   └── tsconfig.json
+│   │   │       ├── logger.ts     # 日志服务
+│   │   │       ├── usageTracker.ts # 用量追踪
+│   │   │       └── providers/
+│   │   │           ├── zhipu.ts   # 智谱 AI 客户端
+│   │   │           ├── deepseek.ts # DeepSeek 客户端
+│   │   │           ├── github.ts  # GitHub Models 客户端
+│   │   │           ├── registry.ts # Provider 注册表
+│   │   │           └── types.ts   # Provider 接口定义
+│   │   └── ...
 │   └── frontend/                 # 前端应用
 │       ├── src/
-│       │   ├── main.ts           # Vue 入口
-│       │   ├── App.vue           # 主布局（左右分栏）
+│       │   ├── App.vue           # 主布局
 │       │   ├── api/
 │       │   │   └── bridge.ts     # API 调用封装
-│       │   ├── components/
-│       │   │   ├── HandInput.vue       # 手牌输入
-│       │   │   ├── BiddingPad.vue      # 叫牌面板
-│       │   │   ├── BiddingSequence.vue # 叫牌序列
-│       │   │   ├── AnalysisResult.vue  # 分析结果展示
-│       │   │   └── SystemSelector.vue  # 体系选择器
-│       │   ├── composables/
-│       │   │   └── useBridge.ts  # 桥牌逻辑（HCP计算/发牌等）
-│       │   └── styles/
-│       │       └── main.css      # 全局样式
-│       ├── package.json
-│       └── tsconfig.json
-├── package.json                  # 根配置（workspaces）
-├── .gitignore
+│       │   └── components/
+│       │       ├── HandInput.vue       # 手牌输入
+│       │       ├── BiddingPad.vue      # 叫牌面板
+│       │       ├── BiddingSequence.vue # 叫牌序列
+│       │       ├── AnalysisResult.vue  # 分析结果展示
+│       │       ├── SystemSelector.vue  # 体系选择器
+│       │       ├── SystemDocModal.vue  # 体系说明弹窗
+│       │       └── UsageModal.vue      # 用量查看弹窗
+│       └── ...
+├── docs/                         # 文档
+│   ├── bidding-systems/           # 体系规则文档（单一数据源）
+│   │   ├── 2-1-GF-System.md      # 自然 2/1 GF 体系
+│   │   └── Precision-System.md   # 精确叫牌体系
+│   └── problems/                 # 问题分析报告
+│       └── ai-response-quality-analysis.md
+├── scripts/
+│   └── build.mjs                 # 构建脚本
+├── package.json
 └── README.md
 ```
 
@@ -76,115 +94,116 @@ bridge-bidding-assistant/
 npm install
 ```
 
-### 配置环境变量
+### 配置 Provider
 
-在项目根目录创建 `.env` 文件：
+编辑 `packages/backend/config/providers.json`，填入 API Key 并启用需要的提供商：
 
-```env
-# 智谱 AI API Key（必填）
-ZHIPU_API_KEY=your_api_key_here
-
-# 服务端口（可选，默认 3001）
-PORT=3001
-
-# 速率限制（可选，默认 10 次/分钟）
-RATE_LIMIT_PER_MINUTE=10
-
-# 日志配置（可选）
-LOG_LEVEL=info          # debug | info | warn | error
-LOG_CONSOLE=true        # 是否控制台输出，默认 true
-LOG_DIR=./logs          # 日志文件目录，默认 ./logs
+```json
+{
+  "providers": {
+    "zhipu": {
+      "enabled": true,
+      "apiKey": "your_zhipu_key",
+      "models": [...]
+    },
+    "deepseek": {
+      "enabled": true,
+      "apiKey": "your_deepseek_key",
+      "models": [...]
+    },
+    "github": {
+      "enabled": true,
+      "apiKey": "your_github_token",
+      "models": [...]
+    }
+  }
+}
 ```
+
+**API Key 获取**：
+- 智谱AI：https://open.bigmodel.cn
+- DeepSeek：https://platform.deepseek.com
+- GitHub Models：GitHub → Settings → Developer settings → Personal access tokens（需 `models:read` 权限）
 
 ### 启动开发服务
 
 ```bash
-# 同时启动前端和后端
 npm run dev
-
-# 或分别启动
-npm run dev:backend     # 后端 http://localhost:3001
-npm run dev:frontend    # 前端 http://localhost:5173
+# 后端 http://localhost:10240
+# 前端 http://localhost:10000/bridge-bidding-assistant/
 ```
 
 ### 生产构建
 
 ```bash
-npm run build
-npm run start           # 启动后端服务
+npm run build:dist
+# 产物：dist/backend/、dist/frontend/、dist/backend.zip、dist/frontend.zip
 ```
 
 ## API 接口
 
-### POST /api/analyze-hand — 分析牌型
+所有接口前缀：`/bridge-bidding-assistant-server/api`
 
-```json
-{
-  "hand": { "spades": "AKQJ", "hearts": "5432", "diamonds": "A3", "clubs": "K2" },
-  "nsSystem": "natural-2over1",
-  "ewSystem": "natural-2over1"
-}
-```
+### 业务接口
 
-### POST /api/analyze-bidding — 分析叫牌进程
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/analyze-hand` | 分析牌型 |
+| POST | `/api/analyze-bidding` | 分析叫牌进程 |
+| POST | `/api/suggest-bid` | 叫牌建议 |
 
-```json
-{
-  "biddingSequence": [
-    { "player": "N", "bid": "1♠" },
-    { "player": "E", "bid": "Pass" },
-    { "player": "S", "bid": "2♥" },
-    { "player": "W", "bid": "Pass" }
-  ],
-  "dealer": "N",
-  "nsSystem": "natural-2over1",
-  "ewSystem": "precision"
-}
-```
+### 管理接口
 
-### POST /api/suggest-bid — 叫牌建议
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/models` | 获取可用模型列表 |
+| GET | `/api/providers/config` | 获取 Provider 配置（Key 脱敏） |
+| PUT | `/api/providers/config/:providerId` | 更新 Provider 配置 |
+| GET | `/api/usage` | 获取所有模型用量情况 |
+| GET | `/api/system-docs` | 获取体系文档列表 |
+| GET | `/api/system-docs/:systemId` | 获取指定体系文档 |
 
-```json
-{
-  "hand": { "spades": "AKQJ", "hearts": "5432", "diamonds": "A3", "clubs": "K2" },
-  "biddingSequence": [
-    { "player": "N", "bid": "1♠" },
-    { "player": "E", "bid": "Pass" }
-  ],
-  "position": "S",
-  "nsSystem": "natural-2over1",
-  "ewSystem": "natural-2over1"
-}
-```
+## Provider 配置说明
+
+`config/providers.json` 中每个模型支持以下限速参数：
+
+| 参数 | 说明 | 维度 |
+|------|------|------|
+| `maxConcurrency` | 最大并发请求数 | 全局 |
+| `defaultRateLimit` | 每分钟最大请求数 | Per-IP |
+| `dailyLimit` | 每日最大请求数（不设置则不限） | 全局 |
 
 ## 叫牌体系
 
 ### 自然二盖一体系 (Natural 2/1 GF)
 
-- 1NT: 15-17 HCP，均型
-- 2NT: 20-21 HCP，均型
-- 5张高花优先开叫
-- 二盖一应叫逼叫到局
+完整规则文档见 [docs/bidding-systems/2-1-GF-System.md](docs/bidding-systems/2-1-GF-System.md)
 
 ### 精确叫牌体系 (Precision)
 
-- 1♣: 16+ HCP，强逼叫
-- 1♦/1♥/1♠: 11-15 HCP
-- 1NT: 13-15 HCP，均型
+完整规则文档见 [docs/bidding-systems/Precision-System.md](docs/bidding-systems/Precision-System.md)
 
-### 内置约定叫
+### 添加新体系
 
-斯台曼问叫、雅各比转移、黑木问叫、格伯问叫、扣叫、负加倍、支持性加倍、新低花逼叫、第四花色逼叫等。
+1. 在 `docs/bidding-systems/` 中新增 Markdown 文件
+2. 在 `config/systemDocs.ts` 的 `initSystemDocs()` 中注册
+3. 在 `config/bidding.ts` 中添加体系配置和约定叫
 
 ## 日志系统
 
-日志按日期分文件存储在 `logs/` 目录下，支持通过环境变量配置：
+日志按日期分文件存储在 `logs/` 目录下：
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `LOG_LEVEL` | 输出等级 (debug/info/warn/error) | `info` |
 | `LOG_CONSOLE` | 是否同时输出到控制台 | `true` |
 | `LOG_DIR` | 日志文件存储目录 | `./logs` |
+
+查看完整的 AI 请求/响应体：
+
+```bash
+LOG_LEVEL=0 npm run dev
+```
 
 ## License
 
